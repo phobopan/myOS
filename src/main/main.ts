@@ -11,10 +11,8 @@ function createWindow() {
     minWidth: 800,
     minHeight: 600,
 
-    // Glassmorphism configuration
+    // Transparent window - CSS controls the glassmorphism
     transparent: true,
-    vibrancy: 'under-window',
-    visualEffectState: 'active',
     backgroundColor: '#00000000',
 
     // Frameless with traffic lights
