@@ -1,42 +1,42 @@
 # Project State: phoebeOS
 
 **Last updated:** 2026-01-21
-**Current phase:** 2 (iMessage) - In Progress
+**Current phase:** 2 (iMessage) - Complete
 
 ## Project Reference
 
 See: .planning/PROJECT.md
 **Core value:** Never miss an important message. One place to see everything that needs a response.
-**Current focus:** Phase 2 - iMessage Integration
+**Current focus:** Phase 2 - iMessage Integration (Complete)
 
 ## Progress
 
 | Phase | Status | Progress |
 |-------|--------|----------|
 | 1 - Foundation | Complete | 100% |
-| 2 - iMessage | In Progress | 80% |
+| 2 - iMessage | Complete | 100% |
 | 3 - Gmail | Pending | 0% |
 | 4 - Instagram | Pending | 0% |
 | 5 - Unified Inbox | Pending | 0% |
 | 6 - Polish | Pending | 0% |
 
-**Overall:** 1/6 phases complete (6/7 plans done)
+**Overall:** 2/6 phases complete (7/7 Phase 2 plans done)
 
 ## Current Position
 
-- **Phase:** 2 - iMessage (In Progress)
-- **Plan:** 04 of 05 complete
-- **Status:** In progress
-- **Last activity:** 2026-01-21 - Completed 02-04-PLAN.md
-- **Progress:** [████████░░] 80%
+- **Phase:** 2 - iMessage (Complete)
+- **Plan:** 05 of 05 complete
+- **Status:** Phase complete
+- **Last activity:** 2026-01-21 - Completed 02-05-PLAN.md with user feedback fixes
+- **Progress:** [██████████] 100%
 
 ## Performance Metrics
 
 | Metric | Value |
 |--------|-------|
-| Plans completed | 6 |
+| Plans completed | 7 |
 | Requirements delivered | 0/32 |
-| Phases completed | 1/6 |
+| Phases completed | 2/6 |
 
 ## Accumulated Context
 
@@ -66,10 +66,14 @@ See: .planning/PROJECT.md
 | Reaction badges at bubble bottom | 2026-01-21 | Left for sent messages, right for received |
 | Date separators with Today/Yesterday | 2026-01-21 | Locale-aware with friendly shortcuts |
 | Display name fallback chain | 2026-01-21 | contactName > displayName > participants > handleId |
+| Chat identifier for universal send | 2026-01-21 | AppleScript chat id works for all conversation types including unnamed groups |
+| attributedBody string extraction | 2026-01-21 | Lightweight parsing without full binary plist library |
+| 5-second polling interval | 2026-01-21 | Balance between freshness and system resources |
+| Max 2 participants displayed | 2026-01-21 | Prevents layout overflow with large group chats |
 
 ### Open Questions
 
-- chat.db schema on macOS 15/26 - verify column names during Phase 2
+- chat.db schema on macOS 15/26 - verify column names during Phase 2 (verified working)
 - Instagram Business/Creator account requirement - verify during onboarding
 - Electron vibrancy on macOS Tahoe 26 - test for GPU regression (fixed in Electron 36.9.2+)
 - node-mac-contacts alternative - need solution for contact resolution
@@ -87,13 +91,13 @@ None accumulated yet.
 ### Last Session
 
 - **Date:** 2026-01-21
-- **Activity:** Completed Plan 02-04 - UI data integration
-- **Stopped at:** Plan 02-04 complete, ready for Plan 02-05
+- **Activity:** Completed Plan 02-05 - Send functionality with user feedback fixes
+- **Stopped at:** Phase 2 complete, ready for Phase 3 (Gmail)
 
 ### Next Session
 
-- **Resume with:** Plan 02-05 (Send functionality)
-- **Context needed:** 02-04-SUMMARY.md for UI component patterns
+- **Resume with:** Phase 3 - Gmail integration
+- **Context needed:** OAuth2 patterns, Gmail API, threading model
 
 ---
 *State initialized: 2026-01-20*
@@ -105,3 +109,5 @@ None accumulated yet.
 *Plan 02-02 completed: 2026-01-21*
 *Plan 02-03 completed: 2026-01-21*
 *Plan 02-04 completed: 2026-01-21*
+*Plan 02-05 completed: 2026-01-21*
+*Phase 2 complete: 2026-01-21*
