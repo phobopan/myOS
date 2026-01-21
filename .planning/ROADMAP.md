@@ -1,7 +1,7 @@
 # Roadmap: phoebeOS
 
 **Created:** 2026-01-20
-**Updated:** 2026-01-20 (Phase 1 planned)
+**Updated:** 2026-01-21 (Phase 2 planned)
 **Depth:** Standard
 **Phases:** 6
 
@@ -25,8 +25,8 @@
 **Plans:** 2 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Scaffold Electron + React + TypeScript with glassmorphism window
-- [ ] 01-02-PLAN.md — Two-pane layout with settings panel
+- [x] 01-01-PLAN.md — Scaffold Electron + React + TypeScript with glassmorphism window
+- [x] 01-02-PLAN.md — Two-pane layout with settings panel
 
 **Requirements:**
 - SHELL-01: App displays glassmorphism UI with translucent materials, blur effects, and white text
@@ -53,6 +53,15 @@ Plans:
 ### Phase 2: iMessage
 
 **Goal:** Users can read and respond to iMessage conversations directly from the app
+
+**Plans:** 5 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — Install dependencies and create iMessage database service
+- [ ] 02-02-PLAN.md — Contact resolution and Full Disk Access permission flow
+- [ ] 02-03-PLAN.md — IPC bridge connecting renderer to iMessage services
+- [ ] 02-04-PLAN.md — Wire UI to real iMessage data with attachments and reactions
+- [ ] 02-05-PLAN.md — Message sending via AppleScript with optimistic UI
 
 **Requirements:**
 - IMSG-01: App reads iMessage threads from local chat.db (requires Full Disk Access)
@@ -203,8 +212,8 @@ Plans:
 
 | Phase | Name | Status | Progress |
 |-------|------|--------|----------|
-| 1 | Foundation | Planned | 0% |
-| 2 | iMessage | Pending | 0% |
+| 1 | Foundation | Complete | 100% |
+| 2 | iMessage | Planned | 0% |
 | 3 | Gmail | Pending | 0% |
 | 4 | Instagram | Pending | 0% |
 | 5 | Unified Inbox | Pending | 0% |
@@ -212,4 +221,4 @@ Plans:
 
 ---
 *Roadmap created: 2026-01-20*
-*Last updated: 2026-01-20 (Phase 1 planned)*
+*Last updated: 2026-01-21 (Phase 2 planned)*
