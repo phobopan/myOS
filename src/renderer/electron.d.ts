@@ -2,6 +2,11 @@ import type { IMessageConversation, IMessageMessage } from './types';
 
 export type PermissionStatus = 'authorized' | 'denied' | 'not-determined';
 
+export interface SendResult {
+  success: boolean;
+  error?: string;
+}
+
 interface ElectronAPI {
   titlebarDoubleClick: () => void;
   platform: string;
@@ -18,6 +23,8 @@ interface ElectronAPI {
     getConversations: (limit?: number) => Promise<IMessageConversation[]>;
     getMessages: (chatId: number, limit?: number) => Promise<IMessageMessage[]>;
     isAccessible: () => Promise<boolean>;
+    sendMessage: (recipient: string, message: string) => Promise<SendResult>;
+    sendToGroupChat: (chatName: string, message: string) => Promise<SendResult>;
   };
 }
 
