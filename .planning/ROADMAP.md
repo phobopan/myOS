@@ -1,7 +1,7 @@
 # Roadmap: phoebeOS
 
 **Created:** 2026-01-20
-**Updated:** 2026-01-20 (Electron pivot)
+**Updated:** 2026-01-20 (Phase 1 planned)
 **Depth:** Standard
 **Phases:** 6
 
@@ -21,6 +21,12 @@
 ### Phase 1: Foundation
 
 **Goal:** Electron app with glassmorphism UI ready to receive data sources
+
+**Plans:** 2 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Scaffold Electron + React + TypeScript with glassmorphism window
+- [ ] 01-02-PLAN.md — Two-pane layout with settings panel
 
 **Requirements:**
 - SHELL-01: App displays glassmorphism UI with translucent materials, blur effects, and white text
@@ -206,4 +212,4 @@
 
 ---
 *Roadmap created: 2026-01-20*
-*Last updated: 2026-01-20 (Electron pivot)*
+*Last updated: 2026-01-20 (Phase 1 planned)*
