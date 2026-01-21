@@ -5,6 +5,7 @@ interface MessageBubbleProps {
   content: string | null;
   isFromMe: boolean;
   senderName?: string | null;
+  senderHandle?: string | null;  // Fallback when senderName is unavailable
   timestamp: Date;
   attachments?: Attachment[];
   reactions?: Reaction[];
@@ -15,11 +16,14 @@ export function MessageBubble({
   content,
   isFromMe,
   senderName,
+  senderHandle,
   timestamp,
   attachments = [],
   reactions = [],
   showSender = false,
 }: MessageBubbleProps) {
+  // Display sender: prefer name, fall back to handle (phone/email)
+  const displaySender = senderName || senderHandle;
   const hasContent = content && content.trim().length > 0;
   const hasAttachments = attachments.length > 0;
   const hasReactions = reactions.length > 0;
@@ -46,9 +50,9 @@ export function MessageBubble({
           }`}
         >
           {/* Sender name for group chats */}
-          {showSender && !isFromMe && senderName && (
+          {showSender && !isFromMe && displaySender && (
             <p className="text-xs text-white/60 mb-1 font-medium">
-              {senderName}
+              {displaySender}
             </p>
           )}
 

@@ -187,6 +187,7 @@ export function ThreadView({ conversation, onMessageSent }: ThreadViewProps) {
                       content={message.text}
                       isFromMe={message.isFromMe}
                       senderName={message.senderName}
+                      senderHandle={message.senderHandle}
                       timestamp={message.date}
                       attachments={message.attachments}
                       reactions={message.reactions}
