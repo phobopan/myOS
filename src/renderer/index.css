@@ -25,10 +25,10 @@ body {
 .titlebar {
   -webkit-app-region: drag;
   -webkit-user-select: none;
-  background: rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(7.4px);
-  -webkit-backdrop-filter: blur(7.4px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.31);
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
 }
 
 .titlebar button {
@@ -37,49 +37,163 @@ body {
 
 /* Glass background for main app area */
 .glass-background {
-  background: rgba(255, 255, 255, 0.06);
-  border-radius: 16px;
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(7.4px);
-  -webkit-backdrop-filter: blur(7.4px);
-  border: 1px solid rgba(255, 255, 255, 0.31);
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 0 16px 8px rgba(255, 255, 255, 0.08);
+  position: relative;
+  overflow: hidden;
+}
+
+.glass-background::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.8),
+    transparent
+  );
+  pointer-events: none;
+}
+
+.glass-background::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 100%;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.8),
+    transparent,
+    rgba(255, 255, 255, 0.3)
+  );
+  pointer-events: none;
 }
 
 /* Glass panel base style */
 .glass-panel {
-  background: rgba(255, 255, 255, 0.06);
-  backdrop-filter: blur(7.4px);
-  -webkit-backdrop-filter: blur(7.4px);
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(9px);
+  -webkit-backdrop-filter: blur(9px);
 }
 
 /* Widget bubble - more opaque for individual items */
 .widget-bubble {
-  background: rgba(255, 255, 255, 0.33);
-  border-radius: 16px;
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(18.4px);
-  -webkit-backdrop-filter: blur(18.4px);
-  border: 1px solid rgba(255, 255, 255, 0.31);
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(50px);
+  -webkit-backdrop-filter: blur(50px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 0 60px 30px rgba(255, 255, 255, 0.3);
+  position: relative;
+  overflow: hidden;
   transition: all 0.2s ease;
 }
 
+.widget-bubble::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.8),
+    transparent
+  );
+  pointer-events: none;
+}
+
+.widget-bubble::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 100%;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.8),
+    transparent,
+    rgba(255, 255, 255, 0.3)
+  );
+  pointer-events: none;
+}
+
 .widget-bubble:hover {
-  background: rgba(255, 255, 255, 0.4);
+  background: rgba(255, 255, 255, 0.5);
 }
 
 .widget-bubble.selected {
-  background: rgba(255, 255, 255, 0.45);
+  background: rgba(255, 255, 255, 0.55);
   border-color: rgba(255, 255, 255, 0.5);
 }
 
 /* Large widget bubble for thread view */
 .widget-bubble-large {
-  background: rgba(255, 255, 255, 0.33);
-  border-radius: 16px;
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.1);
-  backdrop-filter: blur(18.4px);
-  -webkit-backdrop-filter: blur(18.4px);
-  border: 1px solid rgba(255, 255, 255, 0.31);
+  background: rgba(255, 255, 255, 0.4);
+  backdrop-filter: blur(50px);
+  -webkit-backdrop-filter: blur(50px);
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  box-shadow:
+    0 8px 32px rgba(0, 0, 0, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1px 0 rgba(255, 255, 255, 0.1),
+    inset 0 0 60px 30px rgba(255, 255, 255, 0.3);
+  position: relative;
+  overflow: hidden;
+}
+
+.widget-bubble-large::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.8),
+    transparent
+  );
+  pointer-events: none;
+}
+
+.widget-bubble-large::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 1px;
+  height: 100%;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.8),
+    transparent,
+    rgba(255, 255, 255, 0.3)
+  );
+  pointer-events: none;
 }
 
 /* Glass modal style (darker, more blur) */
