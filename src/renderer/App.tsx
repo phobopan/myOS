@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Titlebar } from './components/Titlebar';
 import { Sidebar } from './components/Sidebar';
 import { ThreadView } from './components/ThreadView';
 import { Settings } from './components/Settings';
+import { PermissionOnboarding } from './components/PermissionOnboarding';
 import { Conversation } from './types';
 
 // Dummy data for preview
@@ -130,9 +131,57 @@ const dummyConversations: Conversation[] = [
 export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [permissionStatus, setPermissionStatus] = useState<'checking' | 'authorized' | 'denied'>('checking');
 
   const selectedConversation = dummyConversations.find(c => c.id === selectedId) || null;
 
+  useEffect(() => {
+    checkPermission();
+  }, []);
+
+  const checkPermission = async () => {
+    const status = await window.electron.checkFullDiskAccess();
+    setPermissionStatus(status === 'authorized' ? 'authorized' : 'denied');
+  };
+
+  // Loading state
+  if (permissionStatus === 'checking') {
+    return (
+      <div
+        className="h-screen flex items-center justify-center text-white"
+        style={{
+          background: 'linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), rgba(255, 255, 255, 0.25)',
+          backdropFilter: 'blur(30px)',
+          WebkitBackdropFilter: 'blur(30px)',
+        }}
+      >
+        <div className="text-white/60">Loading...</div>
+      </div>
+    );
+  }
+
+  // Permission onboarding
+  if (permissionStatus === 'denied') {
+    return (
+      <div
+        className="h-screen flex flex-col text-white"
+        style={{
+          background: 'linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), rgba(255, 255, 255, 0.25)',
+          backdropFilter: 'blur(30px)',
+          WebkitBackdropFilter: 'blur(30px)',
+        }}
+      >
+        <Titlebar onSettingsClick={() => setSettingsOpen(true)} />
+        <PermissionOnboarding onRetry={checkPermission} />
+        <Settings
+          isOpen={settingsOpen}
+          onClose={() => setSettingsOpen(false)}
+        />
+      </div>
+    );
+  }
+
+  // Main app (authorized)
   return (
     <div
       className="h-screen flex flex-col text-white"

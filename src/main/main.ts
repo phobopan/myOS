@@ -1,5 +1,6 @@
 import { app, BrowserWindow, ipcMain, systemPreferences } from 'electron';
 import path from 'path';
+import { checkFullDiskAccess, requestFullDiskAccess } from './services/permissionService';
 
 const HEADER_HEIGHT = 52;
 const TRAFFIC_LIGHT_HEIGHT = 14;
@@ -58,6 +59,15 @@ function createWindow() {
     } else if (action === 'Maximize') {
       clickedWin.isMaximized() ? clickedWin.unmaximize() : clickedWin.maximize();
     }
+  });
+
+  // Permission IPC handlers
+  ipcMain.handle('permissions:checkFDA', () => {
+    return checkFullDiskAccess();
+  });
+
+  ipcMain.handle('permissions:requestFDA', () => {
+    requestFullDiskAccess();
   });
 
   return win;
