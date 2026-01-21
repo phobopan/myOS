@@ -18,6 +18,17 @@ export default function App() {
     initializeApp();
   }, []);
 
+  // Poll for new conversations every 5 seconds
+  useEffect(() => {
+    if (permissionStatus !== 'authorized') return;
+
+    const interval = setInterval(() => {
+      loadConversations();
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [permissionStatus]);
+
   const initializeApp = async () => {
     // Check FDA permission
     const fdaStatus = await window.electron.checkFullDiskAccess();
