@@ -1,6 +1,6 @@
 import { app, BrowserWindow, ipcMain, systemPreferences } from 'electron';
 import path from 'path';
-import { checkFullDiskAccess, requestFullDiskAccess } from './services/permissionService';
+import { registerIpcHandlers } from './ipc';
 
 const HEADER_HEIGHT = 52;
 const TRAFFIC_LIGHT_HEIGHT = 14;
@@ -40,7 +40,7 @@ function createWindow() {
     win.loadURL('http://localhost:5173');
     win.webContents.openDevTools();
   } else {
-    win.loadFile(path.join(__dirname, '../renderer/index.html'));
+    win.loadFile(path.join(__dirname, '../../renderer/index.html'));
   }
 
   // Show only when ready to prevent white flash
@@ -61,19 +61,13 @@ function createWindow() {
     }
   });
 
-  // Permission IPC handlers
-  ipcMain.handle('permissions:checkFDA', () => {
-    return checkFullDiskAccess();
-  });
-
-  ipcMain.handle('permissions:requestFDA', () => {
-    requestFullDiskAccess();
-  });
-
   return win;
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  registerIpcHandlers();
+  createWindow();
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') app.quit();

@@ -2,7 +2,7 @@
   "name": "phoebeos",
   "version": "0.1.0",
   "description": "Unified messaging inbox with glassmorphism UI",
-  "main": "dist/main/main.js",
+  "main": "dist/main/main/main.js",
   "author": "Phoebe",
   "license": "MIT",
   "scripts": {
