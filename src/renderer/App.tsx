@@ -84,7 +84,10 @@ export default function App() {
           selectedId={selectedId}
           onSelect={setSelectedId}
         />
-        <ThreadView conversation={selectedConversation} />
+        <ThreadView
+          conversation={selectedConversation}
+          onMessageSent={loadConversations}
+        />
       </div>
 
       <Settings

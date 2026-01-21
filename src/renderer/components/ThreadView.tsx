@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import type { IMessageConversation, IMessageMessage } from '../types';
 import { MessageBubble } from './MessageBubble';
+import { Composer } from './Composer';
 
 function IMessageIcon() {
   return (
@@ -35,11 +36,13 @@ function getDisplayName(conv: IMessageConversation): string {
 
 interface ThreadViewProps {
   conversation: IMessageConversation | null;
+  onMessageSent?: () => void;  // Callback to refresh conversation list
 }
 
-export function ThreadView({ conversation }: ThreadViewProps) {
+export function ThreadView({ conversation, onMessageSent }: ThreadViewProps) {
   const [messages, setMessages] = useState<IMessageMessage[]>([]);
   const [loading, setLoading] = useState(false);
+  const [sendError, setSendError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -65,6 +68,62 @@ export function ThreadView({ conversation }: ThreadViewProps) {
       console.error('Failed to load messages:', err);
     }
     setLoading(false);
+  };
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handleSend = async (messageText: string) => {
+    if (!conversation) return;
+
+    setSendError(null);
+
+    // Create optimistic message
+    const optimisticMessage: IMessageMessage = {
+      id: Date.now(),  // Temporary ID
+      guid: `optimistic-${Date.now()}`,
+      text: messageText,
+      isFromMe: true,
+      date: new Date(),
+      senderHandle: null,
+      senderName: null,
+      attachments: [],
+      reactions: [],
+      isReaction: false,
+    };
+
+    // Add to UI immediately
+    setMessages(prev => [...prev, optimisticMessage]);
+    scrollToBottom();
+
+    // Determine how to send based on conversation type
+    let result;
+    if (conversation.isGroup && conversation.displayName) {
+      // Named group chat
+      result = await window.electron.imessage.sendToGroupChat(conversation.displayName, messageText);
+    } else if (conversation.handleId) {
+      // 1:1 conversation
+      result = await window.electron.imessage.sendMessage(conversation.handleId, messageText);
+    } else if (conversation.isGroup && !conversation.displayName) {
+      // Unnamed group chat - cannot send via AppleScript
+      setSendError('Cannot send to unnamed group chats. Please name the group in Messages.app first.');
+      setMessages(prev => prev.filter(m => m.guid !== optimisticMessage.guid));
+      return;
+    } else {
+      setSendError('Unable to send message - conversation has no recipient.');
+      setMessages(prev => prev.filter(m => m.guid !== optimisticMessage.guid));
+      return;
+    }
+
+    if (!result.success) {
+      // Remove optimistic message on failure
+      setMessages(prev => prev.filter(m => m.guid !== optimisticMessage.guid));
+      setSendError(result.error || 'Failed to send message');
+    } else {
+      // Notify parent to refresh conversation list (shows updated last message)
+      onMessageSent?.();
+    }
   };
 
   if (!conversation) {
@@ -95,6 +154,9 @@ export function ThreadView({ conversation }: ThreadViewProps) {
     messagesByDate[messagesByDate.length - 1].messages.push(msg);
   }
 
+  // Determine if sending is disabled (unnamed group chats)
+  const canSend = !(conversation.isGroup && !conversation.displayName);
+
   return (
     <main className="flex-1 h-full flex flex-col p-4">
       <div className="widget-bubble-large flex-1 flex flex-col overflow-hidden">
@@ -107,7 +169,7 @@ export function ThreadView({ conversation }: ThreadViewProps) {
             </h2>
             {conversation.isGroup && (
               <p className="text-sm text-white/50">
-                Group Chat
+                {conversation.displayName ? 'Group Chat' : 'Unnamed Group Chat'}
               </p>
             )}
           </div>
@@ -148,19 +210,19 @@ export function ThreadView({ conversation }: ThreadViewProps) {
           <div ref={messagesEndRef} />
         </div>
 
-        {/* Composer placeholder - will be functional in Plan 05 */}
-        <div className="p-4 border-t border-white/10">
-          <div className="flex items-center gap-3">
-            <input
-              type="text"
-              placeholder="Type a message..."
-              className="flex-1 bg-white/10 border border-white/10 rounded-xl px-4 py-2.5 text-white placeholder-white/40 focus:outline-none focus:border-white/30 focus:bg-white/15 transition-colors"
-            />
-            <button className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2.5 rounded-xl font-medium transition-colors">
-              Send
-            </button>
+        {/* Error message */}
+        {sendError && (
+          <div className="px-4 py-2 bg-red-500/20 text-red-300 text-sm">
+            {sendError}
           </div>
-        </div>
+        )}
+
+        {/* Composer */}
+        <Composer
+          onSend={handleSend}
+          disabled={!canSend}
+          placeholder={canSend ? 'Type a message...' : 'Name this group in Messages.app to send'}
+        />
       </div>
     </main>
   );
