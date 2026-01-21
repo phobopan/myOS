@@ -24,6 +24,66 @@ export function toAppleTime(date: Date): number {
   return (unixSeconds - APPLE_EPOCH) * 1_000_000_000;
 }
 
+/**
+ * Parse attributedBody blob to extract message text
+ * attributedBody is a binary plist containing NSAttributedString
+ * The text is stored after NSString marker followed by length byte
+ */
+export function parseAttributedBody(buffer: Buffer | null): string | null {
+  if (!buffer || buffer.length === 0) return null;
+
+  try {
+    // The attributedBody format contains the string content in a specific structure
+    // Look for the "NSString" marker followed by content
+    const str = buffer.toString('utf8');
+
+    // Method 1: Find text after streamtyped marker
+    // The format typically has the text near the start after some binary headers
+    const streamtypedIndex = str.indexOf('streamtyped');
+    if (streamtypedIndex !== -1) {
+      // Extract readable text after the marker, filtering control characters
+      const afterMarker = str.slice(streamtypedIndex + 11);
+      // Find the actual text content - usually follows a length byte pattern
+      const match = afterMarker.match(/[\x20-\x7E\u00A0-\uFFFF]{2,}/);
+      if (match && match[0].length > 1) {
+        // Clean up the extracted text
+        const cleaned = match[0]
+          .replace(/^[+\s]+/, '')  // Remove leading + and whitespace
+          .replace(/NSAttributedString.*$/, '')  // Remove trailing class info
+          .replace(/NSObject.*$/, '')
+          .replace(/NSMutableString.*$/, '')
+          .trim();
+        if (cleaned.length > 0) return cleaned;
+      }
+    }
+
+    // Method 2: Look for readable strings directly
+    // Filter for printable ASCII/Unicode sequences
+    const matches = str.match(/[\x20-\x7E\u00A0-\uFFFF]{3,}/g);
+    if (matches) {
+      // Filter out system strings and find the actual message
+      for (const m of matches) {
+        if (
+          !m.includes('NSAttributedString') &&
+          !m.includes('NSMutableString') &&
+          !m.includes('NSObject') &&
+          !m.includes('streamtyped') &&
+          !m.includes('NSDictionary') &&
+          !m.includes('NSValue') &&
+          !m.startsWith('+')
+        ) {
+          const cleaned = m.trim();
+          if (cleaned.length > 0) return cleaned;
+        }
+      }
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 class IMessageService {
   private db: Database.Database | null = null;
   private dbPath: string;
@@ -69,6 +129,7 @@ class IMessageService {
         c.display_name,
         c.style,
         m.text as last_message,
+        m.attributedBody as last_message_attributed_body,
         m.is_from_me,
         m.date as last_message_date,
         h.id as handle_id

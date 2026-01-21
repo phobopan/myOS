@@ -6,6 +6,7 @@ export interface DBConversation {
   display_name: string | null;
   style: number; // 45 = 1:1, 43 = group
   last_message: string | null;
+  last_message_attributed_body: Buffer | null;  // For messages stored in attributedBody
   last_message_date: number; // Apple nanoseconds
   is_from_me: number;
   handle_id: string | null;

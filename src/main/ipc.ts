@@ -1,5 +1,5 @@
 import { ipcMain, app } from 'electron';
-import { iMessageService, fromAppleTime } from './services/iMessageService';
+import { iMessageService, fromAppleTime, parseAttributedBody } from './services/iMessageService';
 import { resolveHandle, buildContactCache, isContactsCacheBuilt } from './services/contactService';
 import { checkFullDiskAccess, requestFullDiskAccess } from './services/permissionService';
 import { sendMessage, sendToGroupChat, sendToChat } from './services/sendService';
@@ -52,6 +52,12 @@ export function registerIpcHandlers(): void {
         });
       }
 
+      // Extract last message text from attributedBody if text is null
+      let lastMessageText = conv.last_message;
+      if (!lastMessageText && conv.last_message_attributed_body) {
+        lastMessageText = parseAttributedBody(conv.last_message_attributed_body);
+      }
+
       return {
         id: conv.id,
         guid: conv.guid,
@@ -59,7 +65,7 @@ export function registerIpcHandlers(): void {
         displayName: conv.display_name,
         contactName: contactInfo?.displayName || null,
         isGroup,
-        lastMessage: conv.last_message,
+        lastMessage: lastMessageText,
         lastMessageDate: fromAppleTime(conv.last_message_date),
         isFromMe: conv.is_from_me === 1,
         handleId: conv.handle_id,
@@ -115,10 +121,16 @@ export function registerIpcHandlers(): void {
       // Get reactions for this message
       const reactions = reactionMap.get(msg.guid) || [];
 
+      // Extract text from attributedBody if text is null
+      let messageText = msg.text;
+      if (!messageText && msg.attributedBody) {
+        messageText = parseAttributedBody(msg.attributedBody);
+      }
+
       return {
         id: msg.id,
         guid: msg.guid,
-        text: msg.text,
+        text: messageText,
         isFromMe: msg.is_from_me === 1,
         date: fromAppleTime(msg.date),
         senderHandle: msg.sender_handle,
