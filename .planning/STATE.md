@@ -1,7 +1,7 @@
 # Project State: phoebeOS
 
-**Last updated:** 2026-01-20
-**Current phase:** 1 (not started)
+**Last updated:** 2026-01-21
+**Current phase:** 1 (in progress)
 
 ## Project Reference
 
@@ -13,7 +13,7 @@ See: .planning/PROJECT.md
 
 | Phase | Status | Progress |
 |-------|--------|----------|
-| 1 - Foundation | Pending | 0% |
+| 1 - Foundation | In progress | 50% |
 | 2 - iMessage | Pending | 0% |
 | 3 - Gmail | Pending | 0% |
 | 4 - Instagram | Pending | 0% |
@@ -25,15 +25,16 @@ See: .planning/PROJECT.md
 ## Current Position
 
 - **Phase:** 1 - Foundation
-- **Plan:** None (phase not yet planned)
-- **Status:** Not started
-- **Progress:** [..........] 0%
+- **Plan:** 01 of 02 complete
+- **Status:** In progress
+- **Last activity:** 2026-01-21 - Completed 01-01-PLAN.md
+- **Progress:** [█████.....] 50%
 
 ## Performance Metrics
 
 | Metric | Value |
 |--------|-------|
-| Plans completed | 0 |
+| Plans completed | 1 |
 | Requirements delivered | 0/32 |
 | Phases completed | 0/6 |
 
@@ -49,6 +50,10 @@ See: .planning/PROJECT.md
 | Direct distribution (no App Store) | 2026-01-20 | Full Disk Access for iMessage incompatible with sandboxing |
 | Official Instagram API only | 2026-01-20 | Account safety over functionality |
 | No dismiss/snooze | 2026-01-20 | Forces inbox zero behavior |
+| Vite over webpack | 2026-01-21 | Faster HMR, simpler config, ESM-native |
+| Separate TypeScript configs | 2026-01-21 | Main process needs CommonJS, renderer uses ESM |
+| under-window vibrancy + active state | 2026-01-21 | Best for full-window glassmorphism that persists when unfocused |
+| 52px header height | 2026-01-21 | Space for traffic lights and future titlebar content |
 
 ### Open Questions
 
@@ -68,15 +73,16 @@ None accumulated yet.
 
 ### Last Session
 
-- **Date:** 2026-01-20
-- **Activity:** Pivoted from Swift/SwiftUI to Electron, completed research, updated roadmap
-- **Stopped at:** Ready for phase planning
+- **Date:** 2026-01-21
+- **Activity:** Completed Plan 01-01 - Electron + React + Glassmorphism foundation
+- **Stopped at:** Plan 01-01 complete, ready for Plan 01-02
 
 ### Next Session
 
-- **Resume with:** `/gsd:plan-phase 1` to plan Foundation phase
-- **Context needed:** ROADMAP.md Phase 1 details, research files in .planning/research/
+- **Resume with:** Execute 01-02-PLAN.md (App layout and navigation)
+- **Context needed:** 01-01-SUMMARY.md for decisions and patterns established
 
 ---
 *State initialized: 2026-01-20*
 *Pivoted to Electron: 2026-01-20*
+*Plan 01-01 completed: 2026-01-21*
