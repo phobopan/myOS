@@ -1,16 +1,30 @@
 import { ConversationList } from './ConversationList';
+import { Conversation } from '../types';
 
-export function Sidebar() {
+interface SidebarProps {
+  conversations: Conversation[];
+  selectedId: string | null;
+  onSelect: (id: string) => void;
+}
+
+export function Sidebar({ conversations, selectedId, onSelect }: SidebarProps) {
   return (
-    <aside className="w-80 h-full flex flex-col glass-panel border-r border-white/10">
-      {/* Filter tabs will go here in Phase 5 */}
-      <div className="p-3 border-b border-white/10">
-        <span className="text-xs text-white/50 uppercase tracking-wider">
-          Messages
+    <aside className="w-80 h-full flex flex-col border-r border-white/5">
+      {/* Header */}
+      <div className="p-4">
+        <span className="text-xs text-white/40 uppercase tracking-wider font-medium">
+          Awaiting Reply
+        </span>
+        <span className="ml-2 text-xs text-white/30">
+          {conversations.length}
         </span>
       </div>
 
-      <ConversationList />
+      <ConversationList
+        conversations={conversations}
+        selectedId={selectedId}
+        onSelect={onSelect}
+      />
     </aside>
   );
 }
