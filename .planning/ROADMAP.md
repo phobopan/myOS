@@ -1,7 +1,7 @@
 # Roadmap: phoebeOS
 
 **Created:** 2026-01-20
-**Updated:** 2026-01-21 (Phase 2 planned)
+**Updated:** 2026-01-21 (Phase 2 complete)
 **Depth:** Standard
 **Phases:** 6
 
@@ -57,11 +57,11 @@ Plans:
 **Plans:** 5 plans
 
 Plans:
-- [ ] 02-01-PLAN.md — Install dependencies and create iMessage database service
-- [ ] 02-02-PLAN.md — Contact resolution and Full Disk Access permission flow
-- [ ] 02-03-PLAN.md — IPC bridge connecting renderer to iMessage services
-- [ ] 02-04-PLAN.md — Wire UI to real iMessage data with attachments and reactions
-- [ ] 02-05-PLAN.md — Message sending via AppleScript with optimistic UI
+- [x] 02-01-PLAN.md — Install dependencies and create iMessage database service
+- [x] 02-02-PLAN.md — Contact resolution and Full Disk Access permission flow
+- [x] 02-03-PLAN.md — IPC bridge connecting renderer to iMessage services
+- [x] 02-04-PLAN.md — Wire UI to real iMessage data with attachments and reactions
+- [x] 02-05-PLAN.md — Message sending via AppleScript with optimistic UI
 
 **Requirements:**
 - IMSG-01: App reads iMessage threads from local chat.db (requires Full Disk Access)
@@ -213,7 +213,7 @@ Plans:
 | Phase | Name | Status | Progress |
 |-------|------|--------|----------|
 | 1 | Foundation | Complete | 100% |
-| 2 | iMessage | Planned | 0% |
+| 2 | iMessage | Complete | 100% |
 | 3 | Gmail | Pending | 0% |
 | 4 | Instagram | Pending | 0% |
 | 5 | Unified Inbox | Pending | 0% |
@@ -221,4 +221,4 @@ Plans:
 
 ---
 *Roadmap created: 2026-01-20*
-*Last updated: 2026-01-21 (Phase 2 planned)*
+*Last updated: 2026-01-21 (Phase 2 complete)*
