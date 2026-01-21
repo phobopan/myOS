@@ -134,7 +134,14 @@ export default function App() {
   const selectedConversation = dummyConversations.find(c => c.id === selectedId) || null;
 
   return (
-    <div className="h-screen flex flex-col glass-panel text-white">
+    <div
+      className="h-screen flex flex-col text-white"
+      style={{
+        background: 'rgba(0, 0, 0, 0.15)',
+        backdropFilter: 'blur(5px)',
+        WebkitBackdropFilter: 'blur(5px)',
+      }}
+    >
       <Titlebar onSettingsClick={() => setSettingsOpen(true)} />
 
       <div className="flex-1 flex overflow-hidden">
