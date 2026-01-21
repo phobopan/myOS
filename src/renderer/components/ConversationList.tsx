@@ -63,7 +63,14 @@ export function ConversationList({ conversations, selectedId, onSelect }: Conver
   if (conversations.length === 0) {
     return (
       <div className="flex-1 overflow-y-auto p-3">
-        <div className="widget-bubble flex flex-col items-center justify-center h-48 text-white/40 p-6">
+        <div
+          className="flex flex-col items-center justify-center h-48 text-white/40 p-6 rounded-2xl border border-white/20"
+          style={{
+            background: 'rgba(255, 255, 255, 0.08)',
+            backdropFilter: 'blur(60px)',
+            WebkitBackdropFilter: 'blur(60px)',
+          }}
+        >
           <div className="text-2xl mb-2">inbox zero</div>
           <p className="text-sm text-center">
             No messages awaiting reply
@@ -79,9 +86,16 @@ export function ConversationList({ conversations, selectedId, onSelect }: Conver
         <button
           key={conversation.id}
           onClick={() => onSelect(conversation.id)}
-          className={`widget-bubble w-full p-3 text-left ${
-            selectedId === conversation.id ? 'selected' : ''
-          }`}
+          className="w-full p-3 text-left rounded-2xl border border-white/20 transition-all"
+          style={{
+            background: 'rgba(255, 255, 255, 0.08)',
+            backdropFilter: 'blur(60px)',
+            WebkitBackdropFilter: 'blur(60px)',
+            ...(selectedId === conversation.id && {
+              background: 'rgba(255, 255, 255, 0.15)',
+              borderColor: 'rgba(255, 255, 255, 0.3)',
+            }),
+          }}
         >
           <div className="flex items-start gap-3">
             <SourceIcon source={conversation.source} />

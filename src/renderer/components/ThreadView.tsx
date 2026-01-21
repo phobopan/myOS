@@ -54,7 +54,14 @@ export function ThreadView({ conversation }: ThreadViewProps) {
   if (!conversation) {
     return (
       <main className="flex-1 h-full flex flex-col p-4">
-        <div className="widget-bubble-large flex-1 flex items-center justify-center text-white/30">
+        <div
+          className="flex-1 flex items-center justify-center text-white/30 rounded-2xl border border-white/20"
+          style={{
+            background: 'rgba(255, 255, 255, 0.08)',
+            backdropFilter: 'blur(60px)',
+            WebkitBackdropFilter: 'blur(60px)',
+          }}
+        >
           <div className="text-center">
             <div className="text-4xl mb-3">Select a conversation</div>
             <p className="text-sm text-white/40">
@@ -68,7 +75,14 @@ export function ThreadView({ conversation }: ThreadViewProps) {
 
   return (
     <main className="flex-1 h-full flex flex-col p-4">
-      <div className="widget-bubble-large flex-1 flex flex-col overflow-hidden">
+      <div
+        className="flex-1 flex flex-col overflow-hidden rounded-2xl border border-white/20"
+        style={{
+          background: 'rgba(255, 255, 255, 0.08)',
+          backdropFilter: 'blur(60px)',
+          WebkitBackdropFilter: 'blur(60px)',
+        }}
+      >
         {/* Header */}
         <div className="flex items-center gap-3 p-4 border-b border-white/10">
           <SourceIcon source={conversation.source} />
