@@ -35,6 +35,14 @@
 
 **Dependencies:** None
 
+**Plans:** 4 plans in 3 waves
+
+Plans:
+- [ ] 01-01-PLAN.md — Xcode project setup + VisualEffectView + GlassCard components
+- [ ] 01-02-PLAN.md — Sample data models and placeholder conversations
+- [ ] 01-03-PLAN.md — Two-pane layout with MessageListPane and ThreadViewPane
+- [ ] 01-04-PLAN.md — Settings panel with slide-over behavior
+
 ---
 
 ### Phase 2: iMessage
@@ -159,7 +167,7 @@
 
 | Phase | Name | Status | Progress |
 |-------|------|--------|----------|
-| 1 | Foundation | Pending | 0% |
+| 1 | Foundation | Planned | 0% |
 | 2 | iMessage | Pending | 0% |
 | 3 | Gmail | Pending | 0% |
 | 4 | Instagram | Pending | 0% |
