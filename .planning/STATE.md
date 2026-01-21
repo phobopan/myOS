@@ -1,40 +1,40 @@
 # Project State: phoebeOS
 
 **Last updated:** 2026-01-21
-**Current phase:** 1 (complete)
+**Current phase:** 2 (iMessage) - In Progress
 
 ## Project Reference
 
 See: .planning/PROJECT.md
 **Core value:** Never miss an important message. One place to see everything that needs a response.
-**Current focus:** Phase 1 - Foundation (Electron) - COMPLETE
+**Current focus:** Phase 2 - iMessage Integration
 
 ## Progress
 
 | Phase | Status | Progress |
 |-------|--------|----------|
 | 1 - Foundation | Complete | 100% |
-| 2 - iMessage | Pending | 0% |
+| 2 - iMessage | In Progress | 20% |
 | 3 - Gmail | Pending | 0% |
 | 4 - Instagram | Pending | 0% |
 | 5 - Unified Inbox | Pending | 0% |
 | 6 - Polish | Pending | 0% |
 
-**Overall:** 1/6 phases complete
+**Overall:** 1/6 phases complete (3/7 plans done)
 
 ## Current Position
 
-- **Phase:** 1 - Foundation (COMPLETE)
-- **Plan:** 02 of 02 complete
-- **Status:** Phase complete
-- **Last activity:** 2026-01-21 - Completed 01-02-PLAN.md
-- **Progress:** [██████████] 100%
+- **Phase:** 2 - iMessage (In Progress)
+- **Plan:** 01 of 05 complete
+- **Status:** In progress
+- **Last activity:** 2026-01-21 - Completed 02-01-PLAN.md
+- **Progress:** [██░░░░░░░░] 20%
 
 ## Performance Metrics
 
 | Metric | Value |
 |--------|-------|
-| Plans completed | 2 |
+| Plans completed | 3 |
 | Requirements delivered | 0/32 |
 | Phases completed | 1/6 |
 
@@ -56,16 +56,19 @@ See: .planning/PROJECT.md
 | 52px header height | 2026-01-21 | Space for traffic lights and future titlebar content |
 | Sidebar width 320px | 2026-01-21 | Provides enough space for conversation previews |
 | Glass-modal darker than glass-panel | 2026-01-21 | Modal needs more contrast to stand out |
+| Defer node-mac-contacts | 2026-01-21 | Node.js 24 N-API incompatibility - address in Plan 02-03 |
+| Singleton pattern for iMessageService | 2026-01-21 | Lazy init, readonly mode, single connection |
 
 ### Open Questions
 
 - chat.db schema on macOS 15/26 - verify column names during Phase 2
 - Instagram Business/Creator account requirement - verify during onboarding
 - Electron vibrancy on macOS Tahoe 26 - test for GPU regression (fixed in Electron 36.9.2+)
+- node-mac-contacts alternative - need solution for contact resolution in Plan 02-03
 
 ### Blockers
 
-None currently.
+- **node-mac-contacts:** Fails to build with Node.js 24 (N-API signature change). Affects Plan 02-03 contact resolution.
 
 ### Technical Debt
 
@@ -76,13 +79,13 @@ None accumulated yet.
 ### Last Session
 
 - **Date:** 2026-01-21
-- **Activity:** Completed Plan 01-02 - Two-pane layout and Settings panel
-- **Stopped at:** Phase 1 complete, ready for Phase 2
+- **Activity:** Completed Plan 02-01 - iMessage database service
+- **Stopped at:** Plan 02-01 complete, ready for Plan 02-02
 
 ### Next Session
 
-- **Resume with:** Plan Phase 2 (iMessage integration)
-- **Context needed:** 01-02-SUMMARY.md for UI patterns established
+- **Resume with:** Plan 02-02 (IPC layer for iMessage)
+- **Context needed:** 02-01-SUMMARY.md for service patterns
 
 ---
 *State initialized: 2026-01-20*
@@ -90,3 +93,4 @@ None accumulated yet.
 *Plan 01-01 completed: 2026-01-21*
 *Plan 01-02 completed: 2026-01-21*
 *Phase 1 complete: 2026-01-21*
+*Plan 02-01 completed: 2026-01-21*
