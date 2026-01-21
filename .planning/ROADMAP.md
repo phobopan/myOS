@@ -1,6 +1,7 @@
 # Roadmap: phoebeOS
 
 **Created:** 2026-01-20
+**Updated:** 2026-01-20 (Electron pivot)
 **Depth:** Standard
 **Phases:** 6
 
@@ -8,7 +9,7 @@
 
 | Phase | Name | Goal | Requirements |
 |-------|------|------|--------------|
-| 1 | Foundation | App shell with glassmorphism UI ready to receive data | SHELL-01, SHELL-02, SHELL-03, SHELL-04 |
+| 1 | Foundation | Electron app with glassmorphism UI ready to receive data | SHELL-01, SHELL-02, SHELL-03, SHELL-04 |
 | 2 | iMessage | Users can read and respond to iMessages | IMSG-01, IMSG-02, IMSG-03, IMSG-04, IMSG-05, IMSG-06 |
 | 3 | Gmail | Users can read and respond to Gmail threads | GMAIL-01, GMAIL-02, GMAIL-03, GMAIL-04, GMAIL-05, GMAIL-06, GMAIL-07 |
 | 4 | Instagram | Users can read and respond to Instagram DMs | INSTA-01, INSTA-02, INSTA-03, INSTA-04, INSTA-05, INSTA-06 |
@@ -19,7 +20,7 @@
 
 ### Phase 1: Foundation
 
-**Goal:** App shell with glassmorphism UI ready to receive data sources
+**Goal:** Electron app with glassmorphism UI ready to receive data sources
 
 **Requirements:**
 - SHELL-01: App displays glassmorphism UI with translucent materials, blur effects, and white text
@@ -33,15 +34,13 @@
 3. User can resize, minimize, and close the window using standard macOS controls
 4. User can open a settings panel showing placeholders for notification and account options
 
+**Technical Approach:**
+- Electron with `vibrancy: 'under-window'` and `transparent: true`
+- React + TypeScript + Tailwind CSS
+- `titleBarStyle: 'hiddenInset'` with custom traffic light positioning
+- CSS `backdrop-filter` for layered glass effects
+
 **Dependencies:** None
-
-**Plans:** 4 plans in 3 waves
-
-Plans:
-- [ ] 01-01-PLAN.md — Xcode project setup + VisualEffectView + GlassCard components
-- [ ] 01-02-PLAN.md — Sample data models and placeholder conversations
-- [ ] 01-03-PLAN.md — Two-pane layout with MessageListPane and ThreadViewPane
-- [ ] 01-04-PLAN.md — Settings panel with slide-over behavior
 
 ---
 
@@ -63,6 +62,12 @@ Plans:
 3. User can click a conversation and see the thread including images, attachments, and reactions
 4. User can type a reply and send it, with the message appearing in Messages.app
 5. User can view and reply to group chat conversations
+
+**Technical Approach:**
+- `better-sqlite3` with `@electron/rebuild` for native module
+- Parse `attributedBody` blob for message text (NSAttributedString format)
+- `node-mac-contacts` or AddressBook SQLite for contact resolution
+- `osascript` via `child_process.execFile` for sending
 
 **Dependencies:** Phase 1 (Foundation)
 
@@ -88,6 +93,13 @@ Plans:
 4. User can choose Reply All to include all thread participants or Forward to new recipients
 5. User sees their sent reply appear in the Gmail thread
 
+**Technical Approach:**
+- `googleapis` npm package for Gmail API
+- OAuth 2.0 with loopback redirect (127.0.0.1)
+- Token storage via Electron's `safeStorage` API
+- `category:primary` query for inbox filtering
+- RFC 2822 message construction with `In-Reply-To` and `References` headers
+
 **Dependencies:** Phase 1 (Foundation)
 
 ---
@@ -111,6 +123,12 @@ Plans:
 4. User can send a text reply to conversations within the 24-hour window
 5. User sees a clear visual indicator on expired conversations with guidance to use Instagram app directly
 
+**Technical Approach:**
+- Facebook OAuth with `https://www.facebook.com/connect/login_success.html` redirect
+- Instagram Graph API via axios/fetch
+- Track `timestamp` on last user message for 24-hour window detection
+- Rate limit handling (200 requests/hour per account)
+
 **Dependencies:** Phase 1 (Foundation)
 
 ---
@@ -133,6 +151,12 @@ Plans:
 3. User can filter the list to show only specific sources using filter buttons
 4. User sees new messages appear automatically without manual refresh
 5. User sees conversations disappear from the list after replying and navigating away (inbox zero behavior)
+
+**Technical Approach:**
+- Unified message interface adapting each source
+- React state management for filter/selection
+- Polling intervals (iMessage: 5s local, Gmail/Instagram: 30s API)
+- Optimistic UI updates after sending
 
 **Dependencies:** Phase 2 (iMessage), Phase 3 (Gmail), Phase 4 (Instagram)
 
@@ -159,6 +183,12 @@ Plans:
 4. User receives macOS notifications for new messages and sees badge count on dock icon
 5. User can customize notification preferences per source in settings
 
+**Technical Approach:**
+- Electron `globalShortcut` for system-wide hotkey
+- React keyboard event handlers for in-app navigation
+- Electron `Notification` API for macOS notifications
+- `app.dock.setBadge()` for unread count
+
 **Dependencies:** Phase 5 (Unified Inbox)
 
 ---
@@ -176,4 +206,4 @@ Plans:
 
 ---
 *Roadmap created: 2026-01-20*
-*Last updated: 2026-01-20*
+*Last updated: 2026-01-20 (Electron pivot)*

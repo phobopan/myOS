@@ -2,7 +2,7 @@
 
 ## What This Is
 
-A native macOS desktop app that unifies iMessage, Gmail, and Instagram DMs into a single "to respond to" stream. Shows only messages awaiting your reply, lets you respond directly from the app, and removes them from the list once handled. Built with glassmorphism aesthetics — transparent background, translucent widgets, white text, clean modern fonts.
+A macOS desktop app built with Electron that unifies iMessage, Gmail, and Instagram DMs into a single "to respond to" stream. Shows only messages awaiting your reply, lets you respond directly from the app, and removes them from the list once handled. Built with glassmorphism aesthetics — transparent background, translucent widgets, white text, clean modern fonts.
 
 ## Core Value
 
@@ -46,32 +46,34 @@ Never miss an important message. One place to see everything that needs a respon
 
 ## Context
 
-**Platform**: Native macOS app using Swift and SwiftUI. SwiftUI's `.ultraThinMaterial` and visual effects will achieve the glassmorphism aesthetic.
+**Platform**: macOS app using Electron with React/TypeScript. Electron's vibrancy API (`setVibrancy`) and transparent window options achieve glassmorphism on macOS.
 
-**iMessage access**: Requires Full Disk Access permission to read ~/Library/Messages/chat.db. Sending uses AppleScript/osascript which works but isn't officially supported.
+**iMessage access**: Requires Full Disk Access permission to read ~/Library/Messages/chat.db via better-sqlite3. Sending uses AppleScript via Node's child_process.
 
-**Gmail**: Standard OAuth 2.0 flow with Gmail API. Well-documented, reliable.
+**Gmail**: Standard OAuth 2.0 flow with Gmail API via googleapis npm package.
 
-**Instagram**: Graph API Messenger platform. Requires Facebook Business account linked to Instagram Professional account. Significant limitations:
+**Instagram**: Graph API Messenger platform via axios/fetch. Requires Facebook Business account linked to Instagram Professional account. Significant limitations:
 - Can only reply to users who messaged first
 - 24-hour window after their last message
 - Text only, no media sending
 - After 24 hours, conversation becomes read-only in phoebeOS
 
-**Existing scripts**: User has working scripts in ~/.local/bin/ for all three platforms, but we're building fresh Swift implementations for native integration.
+**Existing scripts**: User has working scripts in ~/.local/bin/ for all three platforms. Can reference for API patterns but building fresh TypeScript implementations.
 
 ## Constraints
 
-- **Platform**: macOS only — SwiftUI, AppKit where needed
+- **Platform**: macOS only — Electron with vibrancy for glassmorphism
 - **Instagram API**: Official API only — accept the 24-hour and text-only limitations
 - **Permissions**: Will need Full Disk Access (iMessage) and OAuth grants (Gmail, Instagram)
+- **Tech Stack**: Electron + React + TypeScript + Tailwind CSS
 
 ## Key Decisions
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Native macOS (Swift/SwiftUI) | Best glassmorphism support, system integration | — Pending |
-| Fresh implementations over existing scripts | Cleaner native integration, no shell-out dependencies | — Pending |
+| Electron over Swift/SwiftUI | No Xcode required, faster iteration, cross-platform potential | — Pending |
+| React + TypeScript | Type safety, component model, ecosystem | — Pending |
+| better-sqlite3 for chat.db | Synchronous SQLite access from Node.js | — Pending |
 | Official Instagram API only | Account safety over functionality | — Pending |
 | No dismiss/snooze | Forces inbox zero behavior | — Pending |
 | Primary inbox only for Gmail | Filters noise (promos, social, updates) | — Pending |
