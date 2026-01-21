@@ -14,27 +14,27 @@ See: .planning/PROJECT.md
 | Phase | Status | Progress |
 |-------|--------|----------|
 | 1 - Foundation | Complete | 100% |
-| 2 - iMessage | In Progress | 20% |
+| 2 - iMessage | In Progress | 40% |
 | 3 - Gmail | Pending | 0% |
 | 4 - Instagram | Pending | 0% |
 | 5 - Unified Inbox | Pending | 0% |
 | 6 - Polish | Pending | 0% |
 
-**Overall:** 1/6 phases complete (3/7 plans done)
+**Overall:** 1/6 phases complete (4/7 plans done)
 
 ## Current Position
 
 - **Phase:** 2 - iMessage (In Progress)
-- **Plan:** 01 of 05 complete
+- **Plan:** 02 of 05 complete
 - **Status:** In progress
-- **Last activity:** 2026-01-21 - Completed 02-01-PLAN.md
-- **Progress:** [██░░░░░░░░] 20%
+- **Last activity:** 2026-01-21 - Completed 02-02-PLAN.md
+- **Progress:** [████░░░░░░] 40%
 
 ## Performance Metrics
 
 | Metric | Value |
 |--------|-------|
-| Plans completed | 3 |
+| Plans completed | 4 |
 | Requirements delivered | 0/32 |
 | Phases completed | 1/6 |
 
@@ -58,6 +58,8 @@ See: .planning/PROJECT.md
 | Glass-modal darker than glass-panel | 2026-01-21 | Modal needs more contrast to stand out |
 | Defer node-mac-contacts | 2026-01-21 | Node.js 24 N-API incompatibility - address in Plan 02-03 |
 | Singleton pattern for iMessageService | 2026-01-21 | Lazy init, readonly mode, single connection |
+| Stub contactService interface | 2026-01-21 | Provides API for future contact resolution when alternative found |
+| IPC handler pattern namespace:action | 2026-01-21 | Consistent naming for main-renderer communication |
 
 ### Open Questions
 
@@ -79,13 +81,13 @@ None accumulated yet.
 ### Last Session
 
 - **Date:** 2026-01-21
-- **Activity:** Completed Plan 02-01 - iMessage database service
-- **Stopped at:** Plan 02-01 complete, ready for Plan 02-02
+- **Activity:** Completed Plan 02-02 - Contact and permission services
+- **Stopped at:** Plan 02-02 complete, ready for Plan 02-03
 
 ### Next Session
 
-- **Resume with:** Plan 02-02 (IPC layer for iMessage)
-- **Context needed:** 02-01-SUMMARY.md for service patterns
+- **Resume with:** Plan 02-03 (IPC layer for iMessage)
+- **Context needed:** 02-02-SUMMARY.md for IPC patterns, permission flow
 
 ---
 *State initialized: 2026-01-20*
@@ -94,3 +96,4 @@ None accumulated yet.
 *Plan 01-02 completed: 2026-01-21*
 *Phase 1 complete: 2026-01-21*
 *Plan 02-01 completed: 2026-01-21*
+*Plan 02-02 completed: 2026-01-21*
