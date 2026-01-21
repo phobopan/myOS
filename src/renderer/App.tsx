@@ -137,7 +137,7 @@ export default function App() {
     <div
       className="h-screen flex flex-col text-white"
       style={{
-        background: 'rgba(255, 255, 255, 0.25)',
+        background: 'linear-gradient(rgba(0, 0, 0, 0.2), rgba(0, 0, 0, 0.2)), rgba(255, 255, 255, 0.25)',
         backdropFilter: 'blur(30px)',
         WebkitBackdropFilter: 'blur(30px)',
       }}

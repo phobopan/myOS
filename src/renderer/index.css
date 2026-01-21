@@ -53,7 +53,7 @@ body {
    ======================================== */
 
 .widget-bubble {
-  background: rgba(255, 255, 255, 0.15);
+  background: linear-gradient(rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.15)), rgba(255, 255, 255, 0.15);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-radius: 16px;
@@ -82,18 +82,18 @@ body {
 }
 
 .widget-bubble:hover {
-  background: rgba(255, 255, 255, 0.22);
+  background: linear-gradient(rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.12)), rgba(255, 255, 255, 0.22);
   border-color: rgba(255, 255, 255, 0.3);
 }
 
 .widget-bubble.selected {
-  background: rgba(255, 255, 255, 0.28);
+  background: linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1)), rgba(255, 255, 255, 0.28);
   border-color: rgba(255, 255, 255, 0.35);
 }
 
 /* Large widget bubble for thread view */
 .widget-bubble-large {
-  background: rgba(255, 255, 255, 0.15);
+  background: linear-gradient(rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.15)), rgba(255, 255, 255, 0.15);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   border-radius: 16px;
