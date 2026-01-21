@@ -47,6 +47,13 @@ body {
   -webkit-backdrop-filter: blur(5px);
 }
 
+/* App background - main window glass effect */
+.app-background {
+  background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)), rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(30px);
+  -webkit-backdrop-filter: blur(30px);
+}
+
 /* ========================================
    WIDGET BUBBLE STYLES
    Your glass-card with blur(50px) + dark tint

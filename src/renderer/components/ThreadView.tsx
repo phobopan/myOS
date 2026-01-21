@@ -1,6 +1,7 @@
-import { Conversation } from '../types';
+import { useState, useEffect, useRef } from 'react';
+import type { IMessageConversation, IMessageMessage } from '../types';
+import { MessageBubble } from './MessageBubble';
 
-// Source icons (duplicated for now, can refactor to shared later)
 function IMessageIcon() {
   return (
     <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
@@ -11,57 +12,65 @@ function IMessageIcon() {
   );
 }
 
-function GmailIcon() {
-  return (
-    <div className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center">
-      <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24">
-        <path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/>
-      </svg>
-    </div>
-  );
+function formatDateSeparator(date: Date): string {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+  const messageDate = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
+  if (messageDate.getTime() === today.getTime()) return 'Today';
+  if (messageDate.getTime() === yesterday.getTime()) return 'Yesterday';
+
+  return date.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
 }
 
-function InstagramIcon() {
-  return (
-    <div className="w-6 h-6 rounded-full bg-gradient-to-br from-purple-500 via-pink-500 to-orange-400 flex items-center justify-center">
-      <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24">
-        <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
-      </svg>
-    </div>
-  );
-}
-
-function SourceIcon({ source }: { source: Conversation['source'] }) {
-  switch (source) {
-    case 'imessage':
-      return <IMessageIcon />;
-    case 'gmail':
-      return <GmailIcon />;
-    case 'instagram':
-      return <InstagramIcon />;
+function getDisplayName(conv: IMessageConversation): string {
+  if (conv.contactName) return conv.contactName;
+  if (conv.displayName) return conv.displayName;
+  if (conv.isGroup && conv.participants && conv.participants.length > 0) {
+    return conv.participants.join(', ');
   }
-}
-
-function formatMessageTime(date: Date): string {
-  return date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  return conv.handleId || 'Unknown';
 }
 
 interface ThreadViewProps {
-  conversation: Conversation | null;
+  conversation: IMessageConversation | null;
 }
 
 export function ThreadView({ conversation }: ThreadViewProps) {
+  const [messages, setMessages] = useState<IMessageMessage[]>([]);
+  const [loading, setLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (conversation) {
+      loadMessages(conversation.id);
+    } else {
+      setMessages([]);
+    }
+  }, [conversation?.id]);
+
+  useEffect(() => {
+    // Scroll to bottom when messages change
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  const loadMessages = async (chatId: number) => {
+    setLoading(true);
+    try {
+      const msgs = await window.electron.imessage.getMessages(chatId, 100);
+      // Messages come DESC, reverse for chronological display
+      setMessages(msgs.reverse());
+    } catch (err) {
+      console.error('Failed to load messages:', err);
+    }
+    setLoading(false);
+  };
+
   if (!conversation) {
     return (
       <main className="flex-1 h-full flex flex-col p-4">
-        <div
-          className="flex-1 flex items-center justify-center text-white/30 rounded-2xl border border-white/20"
-          style={{
-            background: 'rgba(255, 255, 255, 0.08)',
-            backdropFilter: 'blur(60px)',
-            WebkitBackdropFilter: 'blur(60px)',
-          }}
-        >
+        <div className="widget-bubble-large flex-1 flex items-center justify-center text-white/30">
           <div className="text-center">
             <div className="text-4xl mb-3">Select a conversation</div>
             <p className="text-sm text-white/40">
@@ -73,67 +82,73 @@ export function ThreadView({ conversation }: ThreadViewProps) {
     );
   }
 
+  // Group messages by date for separators
+  const messagesByDate: { date: string; messages: IMessageMessage[] }[] = [];
+  let currentDate = '';
+
+  for (const msg of messages) {
+    const dateStr = formatDateSeparator(msg.date);
+    if (dateStr !== currentDate) {
+      currentDate = dateStr;
+      messagesByDate.push({ date: dateStr, messages: [] });
+    }
+    messagesByDate[messagesByDate.length - 1].messages.push(msg);
+  }
+
   return (
     <main className="flex-1 h-full flex flex-col p-4">
-      <div
-        className="flex-1 flex flex-col overflow-hidden rounded-2xl border border-white/20"
-        style={{
-          background: 'rgba(255, 255, 255, 0.08)',
-          backdropFilter: 'blur(60px)',
-          WebkitBackdropFilter: 'blur(60px)',
-        }}
-      >
+      <div className="widget-bubble-large flex-1 flex flex-col overflow-hidden">
         {/* Header */}
         <div className="flex items-center gap-3 p-4 border-b border-white/10">
-          <SourceIcon source={conversation.source} />
+          <IMessageIcon />
           <div className="flex-1 min-w-0">
             <h2 className="font-semibold text-white truncate">
-              {conversation.name}
+              {getDisplayName(conversation)}
             </h2>
-            {conversation.subject && (
-              <p className="text-sm text-white/50 truncate">
-                {conversation.subject}
-              </p>
-            )}
-            {conversation.username && (
+            {conversation.isGroup && (
               <p className="text-sm text-white/50">
-                @{conversation.username}
+                Group Chat
               </p>
             )}
           </div>
         </div>
 
         {/* Messages */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
-          {conversation.messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex ${message.isFromMe ? 'justify-end' : 'justify-start'}`}
-            >
-              <div
-                className={`max-w-[70%] rounded-2xl px-4 py-2 ${
-                  message.isFromMe
-                    ? 'bg-blue-500/80 text-white'
-                    : 'bg-white/10 text-white'
-                }`}
-              >
-                {!message.isFromMe && message.senderName && (
-                  <p className="text-xs text-white/60 mb-1">
-                    {message.senderName}
-                  </p>
-                )}
-                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
-                <p className={`text-xs mt-1 ${
-                  message.isFromMe ? 'text-white/60' : 'text-white/40'
-                }`}>
-                  {formatMessageTime(message.timestamp)}
-                </p>
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {loading ? (
+            <div className="text-center text-white/40">Loading messages...</div>
+          ) : (
+            messagesByDate.map((group) => (
+              <div key={group.date}>
+                {/* Date separator */}
+                <div className="flex items-center justify-center my-4">
+                  <span className="text-xs text-white/40 bg-white/5 px-3 py-1 rounded-full">
+                    {group.date}
+                  </span>
+                </div>
+
+                {/* Messages for this date */}
+                <div className="space-y-3">
+                  {group.messages.map((message) => (
+                    <MessageBubble
+                      key={message.id}
+                      content={message.text}
+                      isFromMe={message.isFromMe}
+                      senderName={message.senderName}
+                      timestamp={message.date}
+                      attachments={message.attachments}
+                      reactions={message.reactions}
+                      showSender={conversation.isGroup}
+                    />
+                  ))}
+                </div>
               </div>
-            </div>
-          ))}
+            ))
+          )}
+          <div ref={messagesEndRef} />
         </div>
 
-        {/* Composer */}
+        {/* Composer placeholder - will be functional in Plan 05 */}
         <div className="p-4 border-t border-white/10">
           <div className="flex items-center gap-3">
             <input
