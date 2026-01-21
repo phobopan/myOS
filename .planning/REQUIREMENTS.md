@@ -111,49 +111,49 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SHELL-01 | TBD | Pending |
-| SHELL-02 | TBD | Pending |
-| SHELL-03 | TBD | Pending |
-| SHELL-04 | TBD | Pending |
-| INBOX-01 | TBD | Pending |
-| INBOX-02 | TBD | Pending |
-| INBOX-03 | TBD | Pending |
-| INBOX-04 | TBD | Pending |
-| INBOX-05 | TBD | Pending |
-| INBOX-06 | TBD | Pending |
-| IMSG-01 | TBD | Pending |
-| IMSG-02 | TBD | Pending |
-| IMSG-03 | TBD | Pending |
-| IMSG-04 | TBD | Pending |
-| IMSG-05 | TBD | Pending |
-| IMSG-06 | TBD | Pending |
-| GMAIL-01 | TBD | Pending |
-| GMAIL-02 | TBD | Pending |
-| GMAIL-03 | TBD | Pending |
-| GMAIL-04 | TBD | Pending |
-| GMAIL-05 | TBD | Pending |
-| GMAIL-06 | TBD | Pending |
-| GMAIL-07 | TBD | Pending |
-| INSTA-01 | TBD | Pending |
-| INSTA-02 | TBD | Pending |
-| INSTA-03 | TBD | Pending |
-| INSTA-04 | TBD | Pending |
-| INSTA-05 | TBD | Pending |
-| INSTA-06 | TBD | Pending |
-| KEYS-01 | TBD | Pending |
-| KEYS-02 | TBD | Pending |
-| KEYS-03 | TBD | Pending |
-| KEYS-04 | TBD | Pending |
-| KEYS-05 | TBD | Pending |
-| NOTIF-01 | TBD | Pending |
-| NOTIF-02 | TBD | Pending |
-| NOTIF-03 | TBD | Pending |
+| SHELL-01 | Phase 1 - Foundation | Pending |
+| SHELL-02 | Phase 1 - Foundation | Pending |
+| SHELL-03 | Phase 1 - Foundation | Pending |
+| SHELL-04 | Phase 1 - Foundation | Pending |
+| IMSG-01 | Phase 2 - iMessage | Pending |
+| IMSG-02 | Phase 2 - iMessage | Pending |
+| IMSG-03 | Phase 2 - iMessage | Pending |
+| IMSG-04 | Phase 2 - iMessage | Pending |
+| IMSG-05 | Phase 2 - iMessage | Pending |
+| IMSG-06 | Phase 2 - iMessage | Pending |
+| GMAIL-01 | Phase 3 - Gmail | Pending |
+| GMAIL-02 | Phase 3 - Gmail | Pending |
+| GMAIL-03 | Phase 3 - Gmail | Pending |
+| GMAIL-04 | Phase 3 - Gmail | Pending |
+| GMAIL-05 | Phase 3 - Gmail | Pending |
+| GMAIL-06 | Phase 3 - Gmail | Pending |
+| GMAIL-07 | Phase 3 - Gmail | Pending |
+| INSTA-01 | Phase 4 - Instagram | Pending |
+| INSTA-02 | Phase 4 - Instagram | Pending |
+| INSTA-03 | Phase 4 - Instagram | Pending |
+| INSTA-04 | Phase 4 - Instagram | Pending |
+| INSTA-05 | Phase 4 - Instagram | Pending |
+| INSTA-06 | Phase 4 - Instagram | Pending |
+| INBOX-01 | Phase 5 - Unified Inbox | Pending |
+| INBOX-02 | Phase 5 - Unified Inbox | Pending |
+| INBOX-03 | Phase 5 - Unified Inbox | Pending |
+| INBOX-04 | Phase 5 - Unified Inbox | Pending |
+| INBOX-05 | Phase 5 - Unified Inbox | Pending |
+| INBOX-06 | Phase 5 - Unified Inbox | Pending |
+| KEYS-01 | Phase 6 - Polish | Pending |
+| KEYS-02 | Phase 6 - Polish | Pending |
+| KEYS-03 | Phase 6 - Polish | Pending |
+| KEYS-04 | Phase 6 - Polish | Pending |
+| KEYS-05 | Phase 6 - Polish | Pending |
+| NOTIF-01 | Phase 6 - Polish | Pending |
+| NOTIF-02 | Phase 6 - Polish | Pending |
+| NOTIF-03 | Phase 6 - Polish | Pending |
 
 **Coverage:**
 - v1 requirements: 32 total
-- Mapped to phases: 0
-- Unmapped: 32 ⚠️
+- Mapped to phases: 32
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-01-20*
-*Last updated: 2026-01-20 after initial definition*
+*Last updated: 2026-01-20 after roadmap creation*
