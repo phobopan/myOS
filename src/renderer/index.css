@@ -53,9 +53,9 @@ body {
    ======================================== */
 
 .widget-bubble {
-  background: linear-gradient(rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.15)), rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: linear-gradient(rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.35)), rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
@@ -82,20 +82,20 @@ body {
 }
 
 .widget-bubble:hover {
-  background: linear-gradient(rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.12)), rgba(255, 255, 255, 0.22);
+  background: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)), rgba(255, 255, 255, 0.3);
   border-color: rgba(255, 255, 255, 0.3);
 }
 
 .widget-bubble.selected {
-  background: linear-gradient(rgba(0, 0, 0, 0.1), rgba(0, 0, 0, 0.1)), rgba(255, 255, 255, 0.28);
+  background: linear-gradient(rgba(0, 0, 0, 0.25), rgba(0, 0, 0, 0.25)), rgba(255, 255, 255, 0.35);
   border-color: rgba(255, 255, 255, 0.35);
 }
 
 /* Large widget bubble for thread view */
 .widget-bubble-large {
-  background: linear-gradient(rgba(0, 0, 0, 0.15), rgba(0, 0, 0, 0.15)), rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  background: linear-gradient(rgba(0, 0, 0, 0.35), rgba(0, 0, 0, 0.35)), rgba(255, 255, 255, 0.25);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
   border-radius: 16px;
   border: 1px solid rgba(255, 255, 255, 0.2);
   box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
