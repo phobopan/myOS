@@ -25,11 +25,17 @@ function formatDateSeparator(date: Date): string {
   return date.toLocaleDateString(undefined, { weekday: 'long', month: 'short', day: 'numeric' });
 }
 
-function getDisplayName(conv: IMessageConversation): string {
+function getDisplayName(conv: IMessageConversation, maxParticipants = 2): string {
   if (conv.contactName) return conv.contactName;
   if (conv.displayName) return conv.displayName;
   if (conv.isGroup && conv.participants && conv.participants.length > 0) {
-    return conv.participants.join(', ');
+    // Truncate long participant lists to prevent overflow
+    if (conv.participants.length <= maxParticipants) {
+      return conv.participants.join(', ');
+    }
+    const shown = conv.participants.slice(0, maxParticipants).join(', ');
+    const remaining = conv.participants.length - maxParticipants;
+    return `${shown} and ${remaining} more`;
   }
   return conv.handleId || 'Unknown';
 }

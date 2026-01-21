@@ -29,10 +29,13 @@ function getDisplayName(conv: IMessageConversation): string {
   if (conv.contactName) return conv.contactName;
   if (conv.displayName) return conv.displayName;
   if (conv.isGroup && conv.participants && conv.participants.length > 0) {
-    if (conv.participants.length <= 3) {
+    // Truncate to max 2 participants to prevent overflow in sidebar
+    if (conv.participants.length <= 2) {
       return conv.participants.join(', ');
     }
-    return `${conv.participants.slice(0, 2).join(', ')} +${conv.participants.length - 2}`;
+    const shown = conv.participants.slice(0, 2).join(', ');
+    const remaining = conv.participants.length - 2;
+    return `${shown} +${remaining}`;
   }
   return conv.handleId || 'Unknown';
 }
