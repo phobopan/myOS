@@ -1,606 +1,515 @@
-# Electron Glassmorphism on macOS: Implementation Guide
+# Phase 1: Foundation (Electron) - Research
 
-**Researched:** 2026-01-20
-**Electron versions tested:** 32-39
-**macOS versions:** Sonoma 14.x, Sequoia 15.x, Tahoe 26.x
-**Confidence:** HIGH (verified against official Electron docs and recent GitHub issues)
+**Researched:** 2026-01-21
+**Domain:** Electron desktop app with glassmorphism UI, React, TypeScript, Tailwind CSS
+**Confidence:** HIGH
 
----
+## Summary
 
-## Quick Start: Recommended Configuration
+This phase establishes an Electron desktop application with a glassmorphism (frosted glass) UI using React, TypeScript, and Tailwind CSS. The standard approach in 2025-2026 is to use **electron-vite** for fast development builds with HMR, combined with a well-structured project separating main, preload, and renderer processes.
 
-```javascript
-const { app, BrowserWindow, systemPreferences } = require('electron');
-const path = require('path');
+Key technical decisions:
+- **Scaffolding**: Use `electron-vite` (v5.0) with the React TypeScript template for fastest development experience and native HMR support
+- **Glassmorphism**: Combine Electron's `vibrancy: 'under-window'` for native macOS blur with CSS `backdrop-filter` for layered glass effects
+- **Layout**: Use `react-resizable-panels` for the two-pane list/detail layout with persistence
+- **State**: Use Zustand for lightweight state management (settings, UI state)
+- **Settings Storage**: Use `electron-store` for persistent JSON-based settings
 
-function createWindow() {
-  const win = new BrowserWindow({
-    width: 1200,
-    height: 800,
+**Primary recommendation:** Scaffold with `npm create @quick-start/electron@latest phoebeOS -- --template react-ts`, then add Tailwind CSS v4, react-resizable-panels, and electron-store.
 
-    // === TRANSPARENCY & VIBRANCY ===
-    transparent: true,
-    vibrancy: 'under-window',           // Best for full-window glassmorphism
-    visualEffectState: 'active',         // Keep vibrancy even when unfocused
+## Standard Stack
 
-    // === FRAMELESS WITH TRAFFIC LIGHTS ===
-    titleBarStyle: 'hiddenInset',
-    trafficLightPosition: { x: 20, y: 18 },
+The established libraries/tools for this domain:
 
-    // === PREVENT WHITE FLASH ===
-    show: false,
-    backgroundColor: '#00000000',        // Fully transparent
+### Core
+| Library | Version | Purpose | Why Standard |
+|---------|---------|---------|--------------|
+| electron | 35+ | Desktop app framework | Required; v35+ for stability with vibrancy |
+| electron-vite | 5.0.x | Build tooling | Fast HMR, first-class React/TS support, recommended over Forge for dev experience |
+| react | 18.x/19.x | UI framework | Specified in requirements |
+| typescript | 5.x | Type safety | Specified in requirements |
+| tailwindcss | 4.x | Utility CSS | Specified in requirements; v4 has smaller runtime |
 
-    // === macOS EXTRAS ===
-    hasShadow: true,
+### Supporting
+| Library | Version | Purpose | When to Use |
+|---------|---------|---------|-------------|
+| react-resizable-panels | 2.x | Resizable two-pane layout | Required for list/detail layout |
+| zustand | 5.x | State management | UI state, settings state (lightweight, no providers) |
+| electron-store | 10.x | Persistent settings | User preferences, app state persistence |
+| @tailwindcss/postcss | 4.x | PostCSS integration | Required for Tailwind v4 with Vite |
 
-    webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
-      nodeIntegration: false,
-      contextIsolation: true,
-    }
-  });
+### Alternatives Considered
+| Instead of | Could Use | Tradeoff |
+|------------|-----------|----------|
+| electron-vite | electron-forge + vite | Forge is official but Vite plugin is experimental; electron-vite has better HMR |
+| zustand | Redux Toolkit | Redux better for large teams/complex apps; Zustand simpler for this scope |
+| electron-store | localStorage | electron-store persists across app updates, supports encryption |
+| react-resizable-panels | react-split-pane | react-resizable-panels is actively maintained, better accessibility |
 
-  win.loadFile('index.html');
+**Installation:**
+```bash
+# Scaffold project
+npm create @quick-start/electron@latest phoebeOS -- --template react-ts
+cd phoebeOS
 
-  // Show only when ready to prevent white flash
-  win.once('ready-to-show', () => {
-    win.show();
-  });
+# Add Tailwind CSS v4
+npm install tailwindcss @tailwindcss/postcss postcss
 
-  return win;
-}
-
-app.whenReady().then(createWindow);
+# Add UI and state libraries
+npm install react-resizable-panels zustand electron-store
 ```
 
----
+## Architecture Patterns
 
-## 1. Vibrancy API (`setVibrancy`)
-
-### Available Materials (macOS only)
-
-| Material | Use Case | Visual Effect |
-|----------|----------|---------------|
-| `under-window` | **RECOMMENDED** - Full window blur | Blurs desktop/windows behind app |
-| `sidebar` | Navigation panels | Finder-style sidebar blur |
-| `titlebar` | Title bar only | Subtle blur matching system |
-| `menu` | Dropdown menus | Menu-style translucency |
-| `popover` | Popover dialogs | Light blur for overlays |
-| `sheet` | Modal sheets | Sheet-style backdrop |
-| `header` | Header areas | Header-appropriate blur |
-| `hud` | HUD overlays | Darker, high-contrast blur |
-| `fullscreen-ui` | Fullscreen controls | Control overlay blur |
-| `tooltip` | Tooltips | Subtle tooltip blur |
-| `content` | Content areas | General content blur |
-| `window` | Window backgrounds | Standard window blur |
-| `selection` | Selection highlights | Selection-aware blur |
-
-**Deprecated (do not use):** `appearance-based`, `light`, `medium-light`, `ultra-dark`
-
-### Constructor vs Method
-
-```javascript
-// Option 1: In constructor (preferred)
-const win = new BrowserWindow({
-  vibrancy: 'under-window',
-  visualEffectState: 'active'
-});
-
-// Option 2: Set after creation
-win.setVibrancy('sidebar');
-win.setVibrancy('sidebar', { animationDuration: 300 }); // With fade
-
-// Remove vibrancy
-win.setVibrancy(null);
+### Recommended Project Structure
+```
+phoebeOS/
+├── electron.vite.config.ts     # Build configuration
+├── src/
+│   ├── main/                   # Electron main process
+│   │   ├── index.ts            # App entry, window creation
+│   │   └── ipc/                # IPC handlers
+│   │       └── settings.ts     # Settings IPC handlers
+│   ├── preload/                # Context bridge scripts
+│   │   └── index.ts            # Expose safe APIs
+│   └── renderer/               # React app (browser context)
+│       ├── src/
+│       │   ├── App.tsx         # Root component
+│       │   ├── components/
+│       │   │   ├── layout/     # Layout components
+│       │   │   │   ├── TitleBar.tsx
+│       │   │   │   ├── Sidebar.tsx
+│       │   │   │   └── DetailPane.tsx
+│       │   │   ├── settings/   # Settings panel components
+│       │   │   └── ui/         # Reusable UI components
+│       │   ├── stores/         # Zustand stores
+│       │   │   └── settingsStore.ts
+│       │   ├── hooks/          # Custom hooks
+│       │   ├── types/          # TypeScript types
+│       │   └── styles/
+│       │       └── index.css   # Tailwind entry
+│       └── index.html
+├── resources/                  # App icons, assets
+└── out/                        # Build output
 ```
 
-### `visualEffectState` Options
+### Pattern 1: Glassmorphism Window Configuration
+**What:** Configure BrowserWindow for native macOS glassmorphism with vibrancy
+**When to use:** Always for the main window on macOS
+**Example:**
+```typescript
+// Source: Electron BrowserWindow API docs
+import { BrowserWindow, systemPreferences, ipcMain } from 'electron';
 
-Controls vibrancy behavior when window loses focus:
-
-| Value | Behavior |
-|-------|----------|
-| `followWindow` | **Default** - Dims when unfocused (native macOS behavior) |
-| `active` | Always vibrant, even when unfocused |
-| `inactive` | Always dimmed appearance |
-
-**Recommendation:** Use `active` for always-on glassmorphism. Use `followWindow` for native feel.
-
----
-
-## 2. Transparent Window Setup
-
-### Required Configuration
-
-```javascript
-const win = new BrowserWindow({
-  transparent: true,           // REQUIRED for transparency
-  frame: false,                // Usually needed for custom UI
-  backgroundColor: '#00000000', // Fully transparent (8-char hex with alpha)
-  hasShadow: true,             // Optional: macOS window shadow
-  resizable: false,            // IMPORTANT: resizable can break transparency
-});
-```
-
-### CSS Requirements
-
-```css
-/* Root must be transparent */
-html, body {
-  background: transparent;
-  /* Or with slight tint for legibility */
-  background: rgba(255, 255, 255, 0.1);
-}
-```
-
-### Preventing White Flash
-
-```javascript
-const win = new BrowserWindow({
-  show: false,                  // Start hidden
-  backgroundColor: '#00000000', // Transparent background
-  transparent: true,
-});
-
-win.loadFile('index.html');
-
-// Show only after first paint
-win.once('ready-to-show', () => {
-  win.show();
-});
-```
-
-**Warning:** Setting `paintWhenInitiallyHidden: false` will prevent `ready-to-show` from firing.
-
----
-
-## 3. CSS `backdrop-filter` for Additional Blur
-
-Use CSS for element-level glassmorphism on TOP of the window vibrancy.
-
-### Basic Glassmorphism
-
-```css
-.glass-panel {
-  /* Semi-transparent background */
-  background: rgba(255, 255, 255, 0.15);
-
-  /* Blur effect */
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);  /* Safari/older WebKit */
-
-  /* Subtle border for depth */
-  border: 1px solid rgba(255, 255, 255, 0.2);
-  border-radius: 16px;
-
-  /* Optional: shadow for floating effect */
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
-}
-```
-
-### Dark Mode Variant
-
-```css
-.glass-panel-dark {
-  background: rgba(0, 0, 0, 0.3);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-}
-```
-
-### Performance Tips
-
-- Limit to 2-3 glassmorphic elements per viewport
-- Use `blur(8-12px)` on mobile/lower-powered devices
-- Avoid animating elements with `backdrop-filter`
-- `backdrop-filter` only blurs elements BEHIND the target (within the webview)
-
-**Key distinction:**
-- `vibrancy` (Electron) = blurs desktop/other apps behind window
-- `backdrop-filter` (CSS) = blurs web content behind element
-
----
-
-## 4. Frameless Window with Custom Titlebar
-
-### BrowserWindow Configuration
-
-```javascript
 const HEADER_HEIGHT = 52;
 const TRAFFIC_LIGHT_HEIGHT = 14;
 
-const win = new BrowserWindow({
-  titleBarStyle: 'hiddenInset',  // Hide title, show traffic lights
-  trafficLightPosition: {
-    x: 20,
-    y: Math.round(HEADER_HEIGHT / 2 - TRAFFIC_LIGHT_HEIGHT / 2)
-  },
-
-  // For Windows: use overlay instead
-  ...(process.platform === 'win32' && {
-    titleBarOverlay: {
-      color: '#00000000',
-      symbolColor: '#ffffff',
-      height: HEADER_HEIGHT
-    }
-  })
-});
-```
-
-### `titleBarStyle` Options (macOS)
-
-| Value | Effect |
-|-------|--------|
-| `default` | Standard macOS title bar |
-| `hidden` | No title bar, traffic lights visible top-left |
-| `hiddenInset` | **RECOMMENDED** - No title bar, inset traffic lights |
-| `customButtonsOnHover` | Traffic lights only visible on hover (experimental) |
-
-### CSS for Draggable Regions
-
-```css
-/* Make custom titlebar draggable */
-.titlebar {
-  -webkit-app-region: drag;
-  -webkit-user-select: none;
-  height: 52px;
-  display: flex;
-  align-items: center;
-  padding-left: 80px;  /* Space for traffic lights */
-}
-
-/* Exclude interactive elements from drag */
-.titlebar button,
-.titlebar input,
-.titlebar a {
-  -webkit-app-region: no-drag;
-}
-```
-
-### Handling Double-Click (macOS Maximize/Minimize)
-
-```javascript
-// preload.js
-const { contextBridge, ipcRenderer } = require('electron');
-
-contextBridge.exposeInMainWorld('electron', {
-  titlebarDoubleClick: () => ipcRenderer.send('titlebar-double-click')
-});
-
-// main.js
-const { ipcMain, systemPreferences, BrowserWindow } = require('electron');
-
-ipcMain.on('titlebar-double-click', (event) => {
-  const win = BrowserWindow.fromWebContents(event.sender);
-  const action = systemPreferences.getUserDefault('AppleActionOnDoubleClick', 'string');
-
-  if (action === 'Minimize') {
-    win.minimize();
-  } else if (action === 'Maximize') {
-    win.isMaximized() ? win.unmaximize() : win.maximize();
-  }
-});
-```
-
-```javascript
-// renderer.js (React example)
-function Titlebar() {
-  const handleDoubleClick = (e) => {
-    if (e.target === e.currentTarget) {
-      window.electron.titlebarDoubleClick();
-    }
-  };
-
-  return (
-    <div className="titlebar" onDoubleClick={handleDoubleClick}>
-      {/* Titlebar content */}
-    </div>
-  );
-}
-```
-
----
-
-## 5. Limitations and Gotchas
-
-### Known Issues by macOS Version
-
-| Issue | macOS Versions | Workaround |
-|-------|----------------|------------|
-| Vibrancy + transparency white flash | All | Use `show: false` + `ready-to-show` |
-| GPU load regression with vibrancy corners | Tahoe 26.x | Update to Electron 36.9.2+ |
-| `setVibrancy` crash on renderer-created windows | Sequoia 15.x | Fixed in Electron 32.2.7+ |
-| Vibrancy dims when unfocused | All (by design) | Set `visualEffectState: 'active'` |
-
-### General Limitations
-
-1. **Transparent windows cannot be resized reliably**
-   ```javascript
-   // If you need resizing, accept potential visual glitches
-   resizable: true  // May cause white flash on resize
-   ```
-
-2. **DevTools disables transparency**
-   - Transparency stops working when DevTools are open
-   - No workaround; close DevTools for production testing
-
-3. **Cannot click through transparent areas**
-   - Electron limitation, no workaround
-
-4. **Native shadow not shown on transparent windows**
-   - Use CSS `box-shadow` instead
-   ```css
-   .window-content {
-     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-   }
-   ```
-
-5. **Only rectangular draggable regions**
-   - Cannot define circular or complex draggable shapes
-
-6. **Context menu issues on draggable regions**
-   - Don't use custom context menus on draggable areas
-
-### Electron Version Compatibility
-
-| Feature | Minimum Version | Notes |
-|---------|-----------------|-------|
-| `vibrancy` | 1.4.0 | macOS only |
-| `visualEffectState` | 11.0.0 | Requires `vibrancy` |
-| `trafficLightPosition` | 8.0.0 | macOS only |
-| `titleBarOverlay` | 13.0.0 | Windows/Linux |
-| Vibrancy corner fix | 36.9.2 | Fixes Tahoe GPU issue |
-
-**Recommended minimum:** Electron 35+ for best stability
-
----
-
-## 6. Complete Example: Glassmorphism App
-
-### main.js
-
-```javascript
-const { app, BrowserWindow, systemPreferences, ipcMain } = require('electron');
-const path = require('path');
-
-const HEADER_HEIGHT = 52;
-
-function createWindow() {
+function createMainWindow(): BrowserWindow {
   const win = new BrowserWindow({
     width: 1200,
     height: 800,
     minWidth: 800,
     minHeight: 600,
 
-    // Transparency & Vibrancy
+    // Glassmorphism
     transparent: true,
     vibrancy: 'under-window',
-    visualEffectState: 'active',
+    visualEffectState: 'active',  // Stay vibrant when unfocused
     backgroundColor: '#00000000',
 
     // Frameless with traffic lights
     titleBarStyle: 'hiddenInset',
-    trafficLightPosition: { x: 20, y: 19 },
+    trafficLightPosition: {
+      x: 20,
+      y: Math.round(HEADER_HEIGHT / 2 - TRAFFIC_LIGHT_HEIGHT / 2)
+    },
 
     // Prevent white flash
     show: false,
+    hasShadow: true,
 
     webPreferences: {
-      preload: path.join(__dirname, 'preload.js'),
+      preload: path.join(__dirname, '../preload/index.js'),
       nodeIntegration: false,
       contextIsolation: true,
+      sandbox: true,
     }
   });
 
-  win.loadFile('index.html');
-
-  win.once('ready-to-show', () => {
-    win.show();
-  });
-
-  // Handle titlebar double-click
-  ipcMain.on('titlebar-double-click', (event) => {
-    const clickedWin = BrowserWindow.fromWebContents(event.sender);
-    const action = systemPreferences.getUserDefault('AppleActionOnDoubleClick', 'string');
-
-    if (action === 'Minimize') {
-      clickedWin.minimize();
-    } else if (action === 'Maximize') {
-      clickedWin.isMaximized() ? clickedWin.unmaximize() : clickedWin.maximize();
-    }
-  });
-
+  win.once('ready-to-show', () => win.show());
   return win;
 }
-
-app.whenReady().then(createWindow);
-
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
-});
-
-app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) createWindow();
-});
 ```
 
-### preload.js
+### Pattern 2: Secure IPC with contextBridge
+**What:** Expose typed, safe APIs from main process to renderer
+**When to use:** Any main/renderer communication
+**Example:**
+```typescript
+// src/preload/index.ts
+// Source: Electron Context Isolation docs
+import { contextBridge, ipcRenderer } from 'electron';
 
-```javascript
-const { contextBridge, ipcRenderer } = require('electron');
+const electronAPI = {
+  // Settings
+  getSettings: () => ipcRenderer.invoke('settings:get'),
+  setSettings: (settings: Partial<Settings>) =>
+    ipcRenderer.invoke('settings:set', settings),
 
-contextBridge.exposeInMainWorld('electron', {
-  titlebarDoubleClick: () => ipcRenderer.send('titlebar-double-click'),
+  // Window controls
+  titlebarDoubleClick: () => ipcRenderer.send('titlebar:double-click'),
+
+  // Platform info
   platform: process.platform,
-});
-```
+} as const;
 
-### styles.css
+contextBridge.exposeInMainWorld('electronAPI', electronAPI);
 
-```css
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
+// src/renderer/src/types/electron.d.ts
+export interface IElectronAPI {
+  getSettings: () => Promise<Settings>;
+  setSettings: (settings: Partial<Settings>) => Promise<void>;
+  titlebarDoubleClick: () => void;
+  platform: NodeJS.Platform;
 }
 
-html, body {
-  height: 100%;
-  background: transparent;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  color: #1a1a1a;
-}
-
-/* Custom Titlebar */
-.titlebar {
-  -webkit-app-region: drag;
-  -webkit-user-select: none;
-  height: 52px;
-  display: flex;
-  align-items: center;
-  padding-left: 80px; /* Space for traffic lights */
-  padding-right: 16px;
-  background: rgba(255, 255, 255, 0.5);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
-}
-
-.titlebar-title {
-  font-size: 14px;
-  font-weight: 600;
-  opacity: 0.8;
-}
-
-.titlebar button {
-  -webkit-app-region: no-drag;
-}
-
-/* Main Content */
-.content {
-  padding: 24px;
-  height: calc(100% - 52px);
-  overflow-y: auto;
-}
-
-/* Glass Cards */
-.glass-card {
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  border-radius: 16px;
-  padding: 24px;
-  margin-bottom: 16px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
-}
-
-/* Dark mode support */
-@media (prefers-color-scheme: dark) {
-  body {
-    color: #f0f0f0;
-  }
-
-  .titlebar {
-    background: rgba(30, 30, 30, 0.5);
-    border-bottom-color: rgba(255, 255, 255, 0.1);
-  }
-
-  .glass-card {
-    background: rgba(40, 40, 40, 0.6);
-    border-color: rgba(255, 255, 255, 0.1);
+declare global {
+  interface Window {
+    electronAPI: IElectronAPI;
   }
 }
 ```
 
-### index.html
+### Pattern 3: Two-Pane Resizable Layout
+**What:** Master/detail layout with resizable panels
+**When to use:** Main app layout
+**Example:**
+```tsx
+// Source: react-resizable-panels GitHub
+import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
 
-```html
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="styles.css">
-  <title>Glassmorphism App</title>
-</head>
-<body>
-  <div class="titlebar" id="titlebar">
-    <span class="titlebar-title">My Glass App</span>
-  </div>
+function AppLayout() {
+  return (
+    <div className="h-screen flex flex-col">
+      <TitleBar />
+      <PanelGroup
+        direction="horizontal"
+        autoSaveId="main-layout"
+      >
+        <Panel
+          defaultSize={30}
+          minSize={20}
+          maxSize={50}
+          className="glass-panel"
+        >
+          <MessageList />
+        </Panel>
 
-  <div class="content">
-    <div class="glass-card">
-      <h2>Welcome</h2>
-      <p>This is a glassmorphism card with blur effect.</p>
+        <PanelResizeHandle className="w-1 bg-white/10 hover:bg-white/20 transition-colors" />
+
+        <Panel minSize={50} className="glass-panel">
+          <ThreadView />
+        </Panel>
+      </PanelGroup>
     </div>
-
-    <div class="glass-card">
-      <h2>Another Card</h2>
-      <p>The blur stacks: window vibrancy + CSS backdrop-filter.</p>
-    </div>
-  </div>
-
-  <script>
-    document.getElementById('titlebar').addEventListener('dblclick', (e) => {
-      if (e.target === e.currentTarget || e.target.classList.contains('titlebar-title')) {
-        window.electron.titlebarDoubleClick();
-      }
-    });
-  </script>
-</body>
-</html>
+  );
+}
 ```
 
----
+### Pattern 4: Zustand Store with Persistence
+**What:** Lightweight state management synced with electron-store
+**When to use:** Settings, UI preferences
+**Example:**
+```typescript
+// src/renderer/src/stores/settingsStore.ts
+import { create } from 'zustand';
 
-## 7. Advanced: Multiple Vibrancy Regions
+interface SettingsState {
+  notifications: boolean;
+  soundEnabled: boolean;
+  setNotifications: (enabled: boolean) => void;
+  setSoundEnabled: (enabled: boolean) => void;
+  loadSettings: () => Promise<void>;
+}
 
-Electron only supports ONE vibrancy material per window. For multiple regions (e.g., sidebar + content), use a native module.
+export const useSettingsStore = create<SettingsState>((set) => ({
+  notifications: true,
+  soundEnabled: true,
 
-### Using `electron-tinted-with-sidebar`
+  setNotifications: async (enabled) => {
+    set({ notifications: enabled });
+    await window.electronAPI.setSettings({ notifications: enabled });
+  },
 
-```bash
-npm install electron-tinted-with-sidebar
+  setSoundEnabled: async (enabled) => {
+    set({ soundEnabled: enabled });
+    await window.electronAPI.setSettings({ soundEnabled: enabled });
+  },
+
+  loadSettings: async () => {
+    const settings = await window.electronAPI.getSettings();
+    set(settings);
+  },
+}));
 ```
 
-```javascript
-const tint = require('electron-tinted-with-sidebar');
+### Anti-Patterns to Avoid
+- **Exposing raw ipcRenderer:** Never expose `ipcRenderer.send` or `ipcRenderer.on` directly; wrap each operation in a specific function
+- **Using localStorage for settings:** Breaks on app updates; use electron-store
+- **frame: false without titleBarStyle:** Loses native window controls; use `titleBarStyle: 'hiddenInset'`
+- **Rendering to document.body directly:** Creates issues with React 18; use a dedicated root element
 
+## Don't Hand-Roll
+
+Problems that look simple but have existing solutions:
+
+| Problem | Don't Build | Use Instead | Why |
+|---------|-------------|-------------|-----|
+| Resizable panels | CSS resize or manual drag | react-resizable-panels | Keyboard accessibility, persistence, edge cases |
+| Settings persistence | JSON file operations | electron-store | Atomic writes, migrations, encryption support |
+| State management | React Context for everything | Zustand | Context causes full re-renders; Zustand has selective subscriptions |
+| Glass blur effect | Complex CSS-only solutions | Electron vibrancy + Tailwind backdrop | Native performance, proper macOS integration |
+| Traffic light positioning | Manual calculations | trafficLightPosition option | Handles macOS version differences automatically |
+
+**Key insight:** Electron provides native APIs (vibrancy, trafficLightPosition) that CSS cannot replicate. Use them for authentic macOS experience.
+
+## Common Pitfalls
+
+### Pitfall 1: White Flash on Window Load
+**What goes wrong:** Brief white flash before glassmorphism renders
+**Why it happens:** Window shown before transparent background is applied
+**How to avoid:**
+```typescript
 const win = new BrowserWindow({
+  show: false,
   backgroundColor: '#00000000',
-  titleBarStyle: 'hidden',
-  vibrancy: 'sidebar',  // Base vibrancy
+  transparent: true,
 });
+win.once('ready-to-show', () => win.show());
+```
+**Warning signs:** Users report "flicker" on app launch
 
-// MUST call before window is shown
-tint.setWindowAnimationBehavior(win.getNativeWindowHandle(), true);
-tint.setWindowLayout(
-  win.getNativeWindowHandle(),
-  200,  // sidebar width
-  52,   // titlebar height
-  0     // right margin (optional)
-);
+### Pitfall 2: Vibrancy Dims When Unfocused
+**What goes wrong:** Glass effect disappears when clicking away from app
+**Why it happens:** Default macOS behavior dims inactive windows
+**How to avoid:** Set `visualEffectState: 'active'` in BrowserWindow options
+**Warning signs:** App looks different when not in foreground
 
-win.loadFile('index.html');
+### Pitfall 3: electron-store ESM Compatibility
+**What goes wrong:** `require is not defined` or import errors
+**Why it happens:** electron-store v10+ is ESM-only, no CommonJS
+**How to avoid:**
+- Ensure `"type": "module"` in package.json for main process
+- Or use dynamic import: `const Store = (await import('electron-store')).default`
+**Warning signs:** Build errors mentioning ESM/CommonJS
+
+### Pitfall 4: DevTools Breaks Transparency
+**What goes wrong:** Transparency stops working during development
+**Why it happens:** Known Electron limitation when DevTools are open
+**How to avoid:** Close DevTools for visual testing; no workaround exists
+**Warning signs:** Works in production, not in development
+
+### Pitfall 5: Draggable Region Blocks Clicks
+**What goes wrong:** Buttons in titlebar area don't respond to clicks
+**Why it happens:** `-webkit-app-region: drag` captures all events
+**How to avoid:** Add `-webkit-app-region: no-drag` to interactive elements
+**Warning signs:** Titlebar buttons unresponsive
+
+### Pitfall 6: react-resizable-panels Needs Height
+**What goes wrong:** Panels don't render or have zero height
+**Why it happens:** PanelGroup requires parent with explicit height
+**How to avoid:** Ensure container has `height: 100vh` or `h-screen` class
+**Warning signs:** Empty layout, no visible panels
+
+## Code Examples
+
+Verified patterns from official sources:
+
+### Tailwind CSS Glassmorphism Classes
+```css
+/* src/renderer/src/styles/index.css */
+@import "tailwindcss";
+
+@layer components {
+  .glass-panel {
+    @apply bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl;
+  }
+
+  .glass-panel-dark {
+    @apply bg-black/20 backdrop-blur-xl border border-white/10 rounded-2xl;
+  }
+
+  .glass-titlebar {
+    @apply bg-white/5 backdrop-blur-md border-b border-white/10;
+    -webkit-app-region: drag;
+  }
+
+  .glass-button {
+    @apply bg-white/10 hover:bg-white/20 backdrop-blur-sm
+           border border-white/20 rounded-lg px-4 py-2
+           transition-colors duration-200;
+    -webkit-app-region: no-drag;
+  }
+}
+
+/* Ensure transparent background */
+html, body, #root {
+  @apply bg-transparent h-full;
+}
+
+/* White text for glass UI */
+body {
+  @apply text-white;
+}
 ```
 
-**Note:** This is a native module requiring compilation. Only use if you truly need multiple vibrancy regions.
+### Titlebar Double-Click Handler (macOS)
+```typescript
+// src/main/index.ts
+import { ipcMain, systemPreferences, BrowserWindow } from 'electron';
 
----
+ipcMain.on('titlebar:double-click', (event) => {
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (!win) return;
+
+  const action = systemPreferences.getUserDefault(
+    'AppleActionOnDoubleClick',
+    'string'
+  );
+
+  if (action === 'Minimize') {
+    win.minimize();
+  } else if (action === 'Maximize') {
+    win.isMaximized() ? win.unmaximize() : win.maximize();
+  }
+  // 'None' = do nothing (user preference)
+});
+```
+
+### Settings IPC Handler
+```typescript
+// src/main/ipc/settings.ts
+import Store from 'electron-store';
+import { ipcMain } from 'electron';
+
+interface Settings {
+  notifications: boolean;
+  soundEnabled: boolean;
+  theme: 'system' | 'light' | 'dark';
+}
+
+const store = new Store<Settings>({
+  defaults: {
+    notifications: true,
+    soundEnabled: true,
+    theme: 'system',
+  },
+});
+
+export function registerSettingsHandlers() {
+  ipcMain.handle('settings:get', () => store.store);
+
+  ipcMain.handle('settings:set', (_, settings: Partial<Settings>) => {
+    for (const [key, value] of Object.entries(settings)) {
+      store.set(key as keyof Settings, value);
+    }
+  });
+}
+```
+
+### Settings Panel Component
+```tsx
+// src/renderer/src/components/settings/SettingsPanel.tsx
+import { useSettingsStore } from '../../stores/settingsStore';
+
+export function SettingsPanel() {
+  const { notifications, soundEnabled, setNotifications, setSoundEnabled } =
+    useSettingsStore();
+
+  return (
+    <div className="glass-panel p-6 space-y-6">
+      <h2 className="text-xl font-semibold">Settings</h2>
+
+      <div className="space-y-4">
+        <label className="flex items-center justify-between">
+          <span>Notifications</span>
+          <input
+            type="checkbox"
+            checked={notifications}
+            onChange={(e) => setNotifications(e.target.checked)}
+            className="glass-button w-5 h-5"
+          />
+        </label>
+
+        <label className="flex items-center justify-between">
+          <span>Sound</span>
+          <input
+            type="checkbox"
+            checked={soundEnabled}
+            onChange={(e) => setSoundEnabled(e.target.checked)}
+            className="glass-button w-5 h-5"
+          />
+        </label>
+      </div>
+    </div>
+  );
+}
+```
+
+## State of the Art
+
+| Old Approach | Current Approach | When Changed | Impact |
+|--------------|------------------|--------------|--------|
+| Webpack for Electron | Vite (electron-vite) | 2023-2024 | 10x faster HMR, simpler config |
+| electron-store CommonJS | electron-store ESM only | v10.0 (2024) | Must use ESM or dynamic import |
+| Tailwind v3 config file | Tailwind v4 CSS-based config | Jan 2025 | Simpler setup, smaller runtime |
+| Redux for all state | Zustand for small/medium apps | 2023+ | Less boilerplate, same DevTools support |
+| Custom resize handles | react-resizable-panels | 2023+ | Built-in accessibility, persistence |
+
+**Deprecated/outdated:**
+- `electron-forge` Vite plugin is still experimental; use electron-vite for development
+- Tailwind v3 config approach (tailwind.config.js) replaced by CSS-based config in v4
+- `appearance-based`, `light`, `medium-light`, `ultra-dark` vibrancy values deprecated
+
+## Open Questions
+
+Things that couldn't be fully resolved:
+
+1. **Tailwind v4 + electron-vite integration specifics**
+   - What we know: Both work independently; PostCSS setup required
+   - What's unclear: Whether electron-vite template needs additional Tailwind v4 config
+   - Recommendation: Start with official React-TS template, add Tailwind v4 per their docs
+
+2. **macOS Notch handling for custom titlebars**
+   - What we know: trafficLightPosition handles standard positioning
+   - What's unclear: Whether MacBooks with notch need additional safe area considerations
+   - Recommendation: Test on notched MacBooks; traffic lights should be fine with standard inset
 
 ## Sources
 
-- [Electron BrowserWindow API](https://www.electronjs.org/docs/latest/api/browser-window)
-- [Electron BaseWindowConstructorOptions](https://www.electronjs.org/docs/latest/api/structures/base-window-options)
-- [Electron Window Customization Tutorial](https://www.electronjs.org/docs/latest/tutorial/window-customization)
-- [Electron Custom Window Styles](https://www.electronjs.org/docs/latest/tutorial/custom-window-styles)
-- [Building a Custom Title Bar in Electron (DoltHub, 2025)](https://www.dolthub.com/blog/2025-02-11-building-a-custom-title-bar-in-electron/)
-- [Vibrancy + Transparent Background Bug #31862](https://github.com/electron/electron/issues/31862)
-- [macOS Tahoe GPU Load Fix PR #48376](https://github.com/electron/electron/pull/48376)
-- [setVibrancy Crash Fix (VSCode #236772)](https://github.com/microsoft/vscode/issues/236772)
-- [NSVisualEffectView Apple Documentation](https://developer.apple.com/documentation/appkit/nsvisualeffectview)
-- [NSWindow Styles Reference](https://lukakerr.github.io/swift/nswindow-styles)
-- [MDN backdrop-filter](https://developer.mozilla.org/en-US/docs/Web/CSS/backdrop-filter)
+### Primary (HIGH confidence)
+- [Electron BrowserWindow API](https://www.electronjs.org/docs/latest/api/browser-window) - vibrancy, trafficLightPosition, transparent options
+- [Electron Context Isolation Tutorial](https://www.electronjs.org/docs/latest/tutorial/context-isolation) - contextBridge patterns
+- [electron-vite Official Site](https://electron-vite.org/) - project setup, templates
+- [react-resizable-panels GitHub](https://github.com/bvaughn/react-resizable-panels) - Panel API, usage patterns
+- [electron-store GitHub](https://github.com/sindresorhus/electron-store) - ESM requirement, API
+
+### Secondary (MEDIUM confidence)
+- [Electron Forge Vite Template](https://www.electronforge.io/templates/vite-+-typescript) - alternative scaffolding
+- [Tailwind CSS Glassmorphism Guide](https://flyonui.com/blog/glassmorphism-with-tailwind-css/) - Tailwind glass patterns
+- [Zustand vs Redux Comparison](https://zustand.docs.pmnd.rs/getting-started/comparison) - state management choice
+
+### Tertiary (LOW confidence)
+- Blog posts on electron-vite + Tailwind v4 setup (2025) - integration specifics
+- Community templates (GitHub) - implementation patterns
+
+## Metadata
+
+**Confidence breakdown:**
+- Standard stack: HIGH - verified against official docs and npm
+- Architecture: HIGH - patterns from Electron and library documentation
+- Pitfalls: HIGH - documented in GitHub issues and official docs
+- Tailwind v4 integration: MEDIUM - newer, fewer verified examples with electron-vite
+
+**Research date:** 2026-01-21
+**Valid until:** 2026-02-21 (30 days - stable technology stack)
