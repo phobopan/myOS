@@ -14,27 +14,27 @@ See: .planning/PROJECT.md
 | Phase | Status | Progress |
 |-------|--------|----------|
 | 1 - Foundation | Complete | 100% |
-| 2 - iMessage | In Progress | 60% |
+| 2 - iMessage | In Progress | 80% |
 | 3 - Gmail | Pending | 0% |
 | 4 - Instagram | Pending | 0% |
 | 5 - Unified Inbox | Pending | 0% |
 | 6 - Polish | Pending | 0% |
 
-**Overall:** 1/6 phases complete (5/7 plans done)
+**Overall:** 1/6 phases complete (6/7 plans done)
 
 ## Current Position
 
 - **Phase:** 2 - iMessage (In Progress)
-- **Plan:** 03 of 05 complete
+- **Plan:** 04 of 05 complete
 - **Status:** In progress
-- **Last activity:** 2026-01-21 - Completed 02-03-PLAN.md
-- **Progress:** [██████░░░░] 60%
+- **Last activity:** 2026-01-21 - Completed 02-04-PLAN.md
+- **Progress:** [████████░░] 80%
 
 ## Performance Metrics
 
 | Metric | Value |
 |--------|-------|
-| Plans completed | 5 |
+| Plans completed | 6 |
 | Requirements delivered | 0/32 |
 | Phases completed | 1/6 |
 
@@ -63,6 +63,9 @@ See: .planning/PROJECT.md
 | Shared types in src/shared/ | 2026-01-21 | TypeScript rootDir restriction requires neutral directory for cross-process types |
 | Centralize IPC handlers in ipc.ts | 2026-01-21 | Single file for all IPC registrations improves maintainability |
 | Reaction extraction via guid mapping | 2026-01-21 | Extract tapbacks into Map, attach to parent messages for cleaner API |
+| Reaction badges at bubble bottom | 2026-01-21 | Left for sent messages, right for received |
+| Date separators with Today/Yesterday | 2026-01-21 | Locale-aware with friendly shortcuts |
+| Display name fallback chain | 2026-01-21 | contactName > displayName > participants > handleId |
 
 ### Open Questions
 
@@ -84,13 +87,13 @@ None accumulated yet.
 ### Last Session
 
 - **Date:** 2026-01-21
-- **Activity:** Completed Plan 02-03 - IPC bridge for iMessage
-- **Stopped at:** Plan 02-03 complete, ready for Plan 02-04
+- **Activity:** Completed Plan 02-04 - UI data integration
+- **Stopped at:** Plan 02-04 complete, ready for Plan 02-05
 
 ### Next Session
 
-- **Resume with:** Plan 02-04 (UI components for conversation list)
-- **Context needed:** 02-03-SUMMARY.md for IPC API patterns
+- **Resume with:** Plan 02-05 (Send functionality)
+- **Context needed:** 02-04-SUMMARY.md for UI component patterns
 
 ---
 *State initialized: 2026-01-20*
@@ -101,3 +104,4 @@ None accumulated yet.
 *Plan 02-01 completed: 2026-01-21*
 *Plan 02-02 completed: 2026-01-21*
 *Plan 02-03 completed: 2026-01-21*
+*Plan 02-04 completed: 2026-01-21*
