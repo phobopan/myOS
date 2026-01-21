@@ -1,7 +1,16 @@
+import { Titlebar } from './components/Titlebar';
+import { Sidebar } from './components/Sidebar';
+import { ThreadView } from './components/ThreadView';
+
 export default function App() {
   return (
-    <div className="min-h-screen text-white flex items-center justify-center">
-      <h1 className="text-4xl font-light tracking-wide">phoebeOS</h1>
+    <div className="h-screen flex flex-col bg-transparent text-white">
+      <Titlebar />
+
+      <div className="flex-1 flex overflow-hidden">
+        <Sidebar />
+        <ThreadView />
+      </div>
     </div>
   );
 }
