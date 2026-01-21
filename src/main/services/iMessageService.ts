@@ -26,54 +26,107 @@ export function toAppleTime(date: Date): number {
 
 /**
  * Parse attributedBody blob to extract message text
- * attributedBody is a binary plist containing NSAttributedString
- * The text is stored after NSString marker followed by length byte
+ * attributedBody is a binary plist (NSKeyedArchiver format) containing NSAttributedString
+ * The actual text is stored as a UTF-8 or UTF-16 string within the archive
  */
 export function parseAttributedBody(buffer: Buffer | null): string | null {
   if (!buffer || buffer.length === 0) return null;
 
   try {
-    // The attributedBody format contains the string content in a specific structure
-    // Look for the "NSString" marker followed by content
-    const str = buffer.toString('utf8');
+    // The attributedBody is an NSKeyedArchiver binary plist
+    // The message text is stored after specific markers
 
-    // Method 1: Find text after streamtyped marker
-    // The format typically has the text near the start after some binary headers
-    const streamtypedIndex = str.indexOf('streamtyped');
-    if (streamtypedIndex !== -1) {
-      // Extract readable text after the marker, filtering control characters
-      const afterMarker = str.slice(streamtypedIndex + 11);
-      // Find the actual text content - usually follows a length byte pattern
-      const match = afterMarker.match(/[\x20-\x7E\u00A0-\uFFFF]{2,}/);
-      if (match && match[0].length > 1) {
-        // Clean up the extracted text
-        const cleaned = match[0]
-          .replace(/^[+\s]+/, '')  // Remove leading + and whitespace
-          .replace(/NSAttributedString.*$/, '')  // Remove trailing class info
-          .replace(/NSObject.*$/, '')
-          .replace(/NSMutableString.*$/, '')
-          .trim();
-        if (cleaned.length > 0) return cleaned;
+    // Method 1: Look for the NSString content using the +marker pattern
+    // In NSKeyedArchiver, strings are often preceded by their class info
+    // Format is typically: [length byte][string content]
+
+    // Find all potential string positions by looking for length-prefixed UTF-8
+    const candidates: string[] = [];
+
+    for (let i = 0; i < buffer.length - 2; i++) {
+      const possibleLength = buffer[i];
+
+      // Check if this could be a length byte followed by valid UTF-8
+      if (possibleLength > 0 && possibleLength < 255 && i + possibleLength + 1 <= buffer.length) {
+        // Try to read the next 'possibleLength' bytes as UTF-8
+        const slice = buffer.slice(i + 1, i + 1 + possibleLength);
+
+        // Check if all bytes are printable UTF-8
+        let isValid = true;
+        for (const byte of slice) {
+          // Allow printable ASCII, common UTF-8 continuation bytes, and emoji ranges
+          if (byte < 0x20 && byte !== 0x0a && byte !== 0x0d) { // Allow newlines
+            if (byte < 0x80 || (byte >= 0x80 && byte < 0xC0)) {
+              // Could be UTF-8 continuation - check context
+              continue;
+            }
+            isValid = false;
+            break;
+          }
+        }
+
+        if (isValid && possibleLength >= 1) {
+          try {
+            const text = slice.toString('utf8');
+            // Filter out system strings and binary garbage
+            if (
+              text.length >= 1 &&
+              !text.includes('NSAttributedString') &&
+              !text.includes('NSMutableString') &&
+              !text.includes('NSObject') &&
+              !text.includes('NSArray') &&
+              !text.includes('NSDictionary') &&
+              !text.includes('streamtyped') &&
+              !text.includes('NSValue') &&
+              !text.includes('NSNumber') &&
+              !text.includes('$class') &&
+              !text.includes('NS.keys') &&
+              !text.includes('NS.objects') &&
+              !text.startsWith('+') &&
+              !/^[\x00-\x1f]+$/.test(text) && // Not just control chars
+              !/^\s+$/.test(text) // Not just whitespace
+            ) {
+              // Check if it looks like actual message content (has word characters)
+              if (/[\w\u00C0-\u024F\u4E00-\u9FFF\u{1F300}-\u{1F9FF}]/u.test(text)) {
+                candidates.push(text.trim());
+              }
+            }
+          } catch {
+            // Invalid UTF-8, skip
+          }
+        }
       }
     }
 
-    // Method 2: Look for readable strings directly
-    // Filter for printable ASCII/Unicode sequences
-    const matches = str.match(/[\x20-\x7E\u00A0-\uFFFF]{3,}/g);
-    if (matches) {
-      // Filter out system strings and find the actual message
-      for (const m of matches) {
+    // Return the longest valid candidate (usually the message content)
+    if (candidates.length > 0) {
+      // Sort by length descending and return the longest that looks like a message
+      candidates.sort((a, b) => b.length - a.length);
+      for (const candidate of candidates) {
+        // Skip very short strings that are likely metadata
+        if (candidate.length >= 1) {
+          return candidate;
+        }
+      }
+    }
+
+    // Method 2: Fallback - scan for UTF-8 sequences directly
+    // Look for sequences of printable characters
+    const utf8Str = buffer.toString('utf8');
+    const cleanMatches = utf8Str.match(/[\x20-\x7E\u00A0-\u024F\u4E00-\u9FFF\u{1F300}-\u{1F9FF}]{2,}/gu);
+
+    if (cleanMatches) {
+      for (const match of cleanMatches) {
         if (
-          !m.includes('NSAttributedString') &&
-          !m.includes('NSMutableString') &&
-          !m.includes('NSObject') &&
-          !m.includes('streamtyped') &&
-          !m.includes('NSDictionary') &&
-          !m.includes('NSValue') &&
-          !m.startsWith('+')
+          !match.includes('NS') &&
+          !match.includes('stream') &&
+          !match.includes('$class') &&
+          !/^[+\-=]+$/.test(match)
         ) {
-          const cleaned = m.trim();
-          if (cleaned.length > 0) return cleaned;
+          const cleaned = match.trim();
+          if (cleaned.length > 0) {
+            return cleaned;
+          }
         }
       }
     }
