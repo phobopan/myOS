@@ -137,9 +137,9 @@ export default function App() {
     <div
       className="h-screen flex flex-col text-white"
       style={{
-        background: 'rgba(0, 0, 0, 0.15)',
-        backdropFilter: 'blur(5px)',
-        WebkitBackdropFilter: 'blur(5px)',
+        background: 'rgba(255, 255, 255, 0.25)',
+        backdropFilter: 'blur(30px)',
+        WebkitBackdropFilter: 'blur(30px)',
       }}
     >
       <Titlebar onSettingsClick={() => setSettingsOpen(true)} />
