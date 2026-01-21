@@ -2,7 +2,7 @@ import { ipcMain, app } from 'electron';
 import { iMessageService, fromAppleTime } from './services/iMessageService';
 import { resolveHandle, buildContactCache, isContactsCacheBuilt } from './services/contactService';
 import { checkFullDiskAccess, requestFullDiskAccess } from './services/permissionService';
-import { sendMessage, sendToGroupChat } from './services/sendService';
+import { sendMessage, sendToGroupChat, sendToChat } from './services/sendService';
 import { TAPBACK_TYPES, isTapback } from './services/types';
 import type { IMessageConversation, IMessageMessage, Attachment, Reaction } from '../shared/ipcTypes';
 
@@ -140,5 +140,9 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('imessage:sendToGroupChat', async (_, chatName: string, message: string) => {
     return sendToGroupChat(chatName, message);
+  });
+
+  ipcMain.handle('imessage:sendToChat', async (_, chatIdentifier: string, message: string) => {
+    return sendToChat(chatIdentifier, message);
   });
 }

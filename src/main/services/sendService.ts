@@ -70,3 +70,36 @@ export async function sendToGroupChat(chatName: string, message: string): Promis
     return { success: false, error };
   }
 }
+
+/**
+ * Send a message to a chat using its identifier (works for both 1:1 and group chats)
+ * This is the most reliable method as it uses the chat ID directly from chat.db
+ * @param chatIdentifier - The chat identifier (e.g., "iMessage;+;chat123456789" or "iMessage;-;+15551234567")
+ * @param message - The message text to send
+ */
+export async function sendToChat(chatIdentifier: string, message: string): Promise<SendResult> {
+  const escapedMessage = message
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"')
+    .replace(/\n/g, '\\n');
+
+  const escapedChatId = chatIdentifier
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"');
+
+  const script = `
+    tell application "Messages"
+      set targetChat to a reference to chat id "${escapedChatId}"
+      send "${escapedMessage}" to targetChat
+    end tell
+  `;
+
+  try {
+    await execFileAsync('osascript', ['-e', script]);
+    return { success: true };
+  } catch (err) {
+    const error = err instanceof Error ? err.message : 'Unknown error';
+    console.error('Failed to send to chat:', error);
+    return { success: false, error };
+  }
+}

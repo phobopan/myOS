@@ -25,6 +25,7 @@ interface ElectronAPI {
     isAccessible: () => Promise<boolean>;
     sendMessage: (recipient: string, message: string) => Promise<SendResult>;
     sendToGroupChat: (chatName: string, message: string) => Promise<SendResult>;
+    sendToChat: (chatIdentifier: string, message: string) => Promise<SendResult>;
   };
 }
 

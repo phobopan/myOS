@@ -97,24 +97,14 @@ export function ThreadView({ conversation, onMessageSent }: ThreadViewProps) {
     setMessages(prev => [...prev, optimisticMessage]);
     scrollToBottom();
 
-    // Determine how to send based on conversation type
-    let result;
-    if (conversation.isGroup && conversation.displayName) {
-      // Named group chat
-      result = await window.electron.imessage.sendToGroupChat(conversation.displayName, messageText);
-    } else if (conversation.handleId) {
-      // 1:1 conversation
-      result = await window.electron.imessage.sendMessage(conversation.handleId, messageText);
-    } else if (conversation.isGroup && !conversation.displayName) {
-      // Unnamed group chat - cannot send via AppleScript
-      setSendError('Cannot send to unnamed group chats. Please name the group in Messages.app first.');
-      setMessages(prev => prev.filter(m => m.guid !== optimisticMessage.guid));
-      return;
-    } else {
-      setSendError('Unable to send message - conversation has no recipient.');
+    // Send using chat identifier (works for all conversation types)
+    if (!conversation.chatIdentifier) {
+      setSendError('Unable to send message - conversation has no identifier.');
       setMessages(prev => prev.filter(m => m.guid !== optimisticMessage.guid));
       return;
     }
+
+    const result = await window.electron.imessage.sendToChat(conversation.chatIdentifier, messageText);
 
     if (!result.success) {
       // Remove optimistic message on failure
@@ -154,8 +144,8 @@ export function ThreadView({ conversation, onMessageSent }: ThreadViewProps) {
     messagesByDate[messagesByDate.length - 1].messages.push(msg);
   }
 
-  // Determine if sending is disabled (unnamed group chats)
-  const canSend = !(conversation.isGroup && !conversation.displayName);
+  // Sending is enabled for all conversations with a chatIdentifier
+  const canSend = Boolean(conversation.chatIdentifier);
 
   return (
     <main className="flex-1 h-full flex flex-col p-4">
@@ -169,7 +159,7 @@ export function ThreadView({ conversation, onMessageSent }: ThreadViewProps) {
             </h2>
             {conversation.isGroup && (
               <p className="text-sm text-white/50">
-                {conversation.displayName ? 'Group Chat' : 'Unnamed Group Chat'}
+                Group Chat
               </p>
             )}
           </div>
@@ -221,7 +211,7 @@ export function ThreadView({ conversation, onMessageSent }: ThreadViewProps) {
         <Composer
           onSend={handleSend}
           disabled={!canSend}
-          placeholder={canSend ? 'Type a message...' : 'Name this group in Messages.app to send'}
+          placeholder={canSend ? 'Type a message...' : 'Unable to send to this conversation'}
         />
       </div>
     </main>

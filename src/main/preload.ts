@@ -18,5 +18,6 @@ contextBridge.exposeInMainWorld('electron', {
     isAccessible: () => ipcRenderer.invoke('imessage:isAccessible'),
     sendMessage: (recipient: string, message: string) => ipcRenderer.invoke('imessage:sendMessage', recipient, message),
     sendToGroupChat: (chatName: string, message: string) => ipcRenderer.invoke('imessage:sendToGroupChat', chatName, message),
+    sendToChat: (chatIdentifier: string, message: string) => ipcRenderer.invoke('imessage:sendToChat', chatIdentifier, message),
   },
 });
