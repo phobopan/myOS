@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import type { GmailThread } from '../types';
 import { EmailMessage } from './EmailMessage';
+import { GmailComposer } from './GmailComposer';
 
 function GmailIcon() {
   return (
@@ -17,7 +18,7 @@ interface GmailThreadViewProps {
   onReplySent?: () => void;
 }
 
-export function GmailThreadView({ threadId }: GmailThreadViewProps) {
+export function GmailThreadView({ threadId, onReplySent }: GmailThreadViewProps) {
   const [thread, setThread] = useState<GmailThread | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -59,6 +60,24 @@ export function GmailThreadView({ threadId }: GmailThreadViewProps) {
       }
       return next;
     });
+  };
+
+  const reloadThread = async () => {
+    if (!threadId) return;
+    try {
+      const t = await window.electron.gmail.getThread(threadId);
+      setThread(t);
+      // Keep last message expanded
+      if (t.messages.length > 0) {
+        setExpandedMessageIds(prev => {
+          const next = new Set(prev);
+          next.add(t.messages[t.messages.length - 1].id);
+          return next;
+        });
+      }
+    } catch (err) {
+      console.error('Failed to reload thread:', err);
+    }
   };
 
   if (!threadId) {
@@ -111,10 +130,18 @@ export function GmailThreadView({ threadId }: GmailThreadViewProps) {
           ) : null}
         </div>
 
-        {/* Composer placeholder (will be added in 03-04) */}
-        <div className="p-4 border-t border-white/10 text-white/40 text-center text-sm">
-          Composer coming in 03-04
-        </div>
+        {/* Composer */}
+        {thread && thread.messages.length > 0 && (
+          <GmailComposer
+            thread={thread}
+            lastMessage={thread.messages[thread.messages.length - 1]}
+            onSent={() => {
+              // Refresh thread to show sent message
+              reloadThread();
+              onReplySent?.();
+            }}
+          />
+        )}
       </div>
     </main>
   );
