@@ -1,13 +1,13 @@
 # Project State: phoebeOS
 
-**Last updated:** 2026-01-21
-**Current phase:** 2 (iMessage) - Complete
+**Last updated:** 2026-01-22
+**Current phase:** 3 (Gmail) - In Progress
 
 ## Project Reference
 
 See: .planning/PROJECT.md
 **Core value:** Never miss an important message. One place to see everything that needs a response.
-**Current focus:** Phase 2 - iMessage Integration (Complete)
+**Current focus:** Phase 3 - Gmail Integration (In Progress)
 
 ## Progress
 
@@ -15,26 +15,26 @@ See: .planning/PROJECT.md
 |-------|--------|----------|
 | 1 - Foundation | Complete | 100% |
 | 2 - iMessage | Complete | 100% |
-| 3 - Gmail | Pending | 0% |
+| 3 - Gmail | In Progress | 20% |
 | 4 - Instagram | Pending | 0% |
 | 5 - Unified Inbox | Pending | 0% |
 | 6 - Polish | Pending | 0% |
 
-**Overall:** 2/6 phases complete (7/7 Phase 2 plans done)
+**Overall:** 2/6 phases complete (8/8 total plans done)
 
 ## Current Position
 
-- **Phase:** 2 - iMessage (Complete)
-- **Plan:** 05 of 05 complete
-- **Status:** Phase complete
-- **Last activity:** 2026-01-21 - Completed 02-05-PLAN.md with user feedback fixes
-- **Progress:** [██████████] 100%
+- **Phase:** 3 - Gmail (In Progress)
+- **Plan:** 01 of 05 complete
+- **Status:** In progress
+- **Last activity:** 2026-01-22 - Completed 03-01-PLAN.md (OAuth authentication)
+- **Progress:** [██░░░░░░░░] 20%
 
 ## Performance Metrics
 
 | Metric | Value |
 |--------|-------|
-| Plans completed | 7 |
+| Plans completed | 8 |
 | Requirements delivered | 0/32 |
 | Phases completed | 2/6 |
 
@@ -70,6 +70,11 @@ See: .planning/PROJECT.md
 | attributedBody string extraction | 2026-01-21 | Lightweight parsing without full binary plist library |
 | 5-second polling interval | 2026-01-21 | Balance between freshness and system resources |
 | Max 2 participants displayed | 2026-01-21 | Prevents layout overflow with large group chats |
+| electron-store v8 for Gmail auth | 2026-01-22 | v11 is ESM-only, main process uses CommonJS |
+| PKCE over basic OAuth | 2026-01-22 | S256 code challenge prevents authorization code interception |
+| Loopback server on 127.0.0.1:8847 | 2026-01-22 | More reliable than custom protocol handlers for OAuth callback |
+| Always prompt=consent for Gmail | 2026-01-22 | Ensures refresh_token always granted for offline access |
+| safeStorage with plaintext fallback | 2026-01-22 | Use hardware encryption when available without breaking compatibility |
 
 ### Open Questions
 
@@ -77,10 +82,12 @@ See: .planning/PROJECT.md
 - Instagram Business/Creator account requirement - verify during onboarding
 - Electron vibrancy on macOS Tahoe 26 - test for GPU regression (fixed in Electron 36.9.2+)
 - node-mac-contacts alternative - need solution for contact resolution
+- Gmail credential management UX - should future plan add UI for credential setup vs environment variables?
 
 ### Blockers
 
 - **node-mac-contacts:** Fails to build with Node.js 24 (N-API signature change). Contact names show as phone numbers until alternative implemented.
+- **Gmail OAuth credentials:** Users must manually create Google Cloud project and configure OAuth credentials before authentication works. No validation until authenticate() is called.
 
 ### Technical Debt
 
@@ -90,14 +97,14 @@ None accumulated yet.
 
 ### Last Session
 
-- **Date:** 2026-01-21
-- **Activity:** Completed Plan 02-05 - Send functionality with user feedback fixes
-- **Stopped at:** Phase 2 complete, ready for Phase 3 (Gmail)
+- **Date:** 2026-01-22
+- **Activity:** Completed Plan 03-01 - Gmail OAuth authentication
+- **Stopped at:** Plan 03-01 complete, ready for Plan 03-02
 
 ### Next Session
 
-- **Resume with:** Phase 3 - Gmail integration
-- **Context needed:** OAuth2 patterns, Gmail API, threading model
+- **Resume with:** Plan 03-02 - Gmail API integration (fetch threads, messages, send, reply)
+- **Context needed:** Gmail API threading model, message format, attachment handling
 
 ---
 *State initialized: 2026-01-20*
@@ -111,3 +118,4 @@ None accumulated yet.
 *Plan 02-04 completed: 2026-01-21*
 *Plan 02-05 completed: 2026-01-21*
 *Phase 2 complete: 2026-01-21*
+*Plan 03-01 completed: 2026-01-22*
