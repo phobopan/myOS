@@ -15,26 +15,26 @@ See: .planning/PROJECT.md
 |-------|--------|----------|
 | 1 - Foundation | Complete | 100% |
 | 2 - iMessage | Complete | 100% |
-| 3 - Gmail | In Progress | 20% |
+| 3 - Gmail | In Progress | 40% |
 | 4 - Instagram | Pending | 0% |
 | 5 - Unified Inbox | Pending | 0% |
 | 6 - Polish | Pending | 0% |
 
-**Overall:** 2/6 phases complete (8/8 total plans done)
+**Overall:** 2/6 phases complete (9/9 total plans done)
 
 ## Current Position
 
 - **Phase:** 3 - Gmail (In Progress)
-- **Plan:** 01 of 05 complete
+- **Plan:** 02 of 05 complete
 - **Status:** In progress
-- **Last activity:** 2026-01-22 - Completed 03-01-PLAN.md (OAuth authentication)
-- **Progress:** [██░░░░░░░░] 20%
+- **Last activity:** 2026-01-22 - Completed 03-02-PLAN.md (Gmail API integration)
+- **Progress:** [████░░░░░░] 40%
 
 ## Performance Metrics
 
 | Metric | Value |
 |--------|-------|
-| Plans completed | 8 |
+| Plans completed | 9 |
 | Requirements delivered | 0/32 |
 | Phases completed | 2/6 |
 
@@ -75,6 +75,10 @@ See: .planning/PROJECT.md
 | Loopback server on 127.0.0.1:8847 | 2026-01-22 | More reliable than custom protocol handlers for OAuth callback |
 | Always prompt=consent for Gmail | 2026-01-22 | Ensures refresh_token always granted for offline access |
 | safeStorage with plaintext fallback | 2026-01-22 | Use hardware encryption when available without breaking compatibility |
+| Base64 attachment transfer over IPC | 2026-01-22 | Electron IPC cannot transfer Buffer objects directly |
+| Duplicate Gmail types in ipcTypes.ts | 2026-01-22 | TypeScript rootDir restrictions prevent import from main process |
+| Primary inbox only via category:primary | 2026-01-22 | Gmail API category label for inbox filtering |
+| Full thread details for all threads | 2026-01-22 | No lazy loading - fetch full details immediately for simpler implementation |
 
 ### Open Questions
 
@@ -98,13 +102,13 @@ None accumulated yet.
 ### Last Session
 
 - **Date:** 2026-01-22
-- **Activity:** Completed Plan 03-01 - Gmail OAuth authentication
-- **Stopped at:** Plan 03-01 complete, ready for Plan 03-02
+- **Activity:** Completed Plan 03-02 - Gmail API integration
+- **Stopped at:** Plan 03-02 complete, ready for Plan 03-03
 
 ### Next Session
 
-- **Resume with:** Plan 03-02 - Gmail API integration (fetch threads, messages, send, reply)
-- **Context needed:** Gmail API threading model, message format, attachment handling
+- **Resume with:** Plan 03-03 - Gmail UI components
+- **Context needed:** Thread list display, message rendering, compose UI
 
 ---
 *State initialized: 2026-01-20*
@@ -119,3 +123,4 @@ None accumulated yet.
 *Plan 02-05 completed: 2026-01-21*
 *Phase 2 complete: 2026-01-21*
 *Plan 03-01 completed: 2026-01-22*
+*Plan 03-02 completed: 2026-01-22*
