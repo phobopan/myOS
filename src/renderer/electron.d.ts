@@ -1,4 +1,14 @@
-import type { IMessageConversation, IMessageMessage, GmailThread, GmailMessage, GmailAttachment } from './types';
+import type {
+  IMessageConversation,
+  IMessageMessage,
+  GmailThread,
+  GmailMessage,
+  GmailAttachment,
+  InstagramConversation,
+  InstagramMessage,
+  InstagramSendResult,
+  InstagramAccountInfo,
+} from './types';
 
 export type PermissionStatus = 'authorized' | 'denied' | 'not-determined';
 
@@ -48,6 +58,20 @@ interface ElectronAPI {
     sendReply: (threadId: string, originalMessageId: string, to: string, subject: string, body: string, options?: { cc?: string; bcc?: string }) => Promise<GmailMessage>;
     sendReplyAll: (threadId: string, originalMessage: GmailMessage, body: string, options?: { subject?: string }) => Promise<GmailMessage>;
     forward: (originalMessage: GmailMessage, to: string, additionalBody?: string) => Promise<GmailMessage>;
+  };
+
+  // Instagram APIs
+  instagram: {
+    // Auth
+    authenticate: () => Promise<InstagramAccountInfo>;
+    isAuthenticated: () => Promise<boolean>;
+    getAccountInfo: () => Promise<InstagramAccountInfo | null>;
+    disconnect: () => Promise<void>;
+    // Data
+    getConversations: (limit?: number) => Promise<InstagramConversation[]>;
+    getMessages: (conversationId: string, limit?: number) => Promise<InstagramMessage[]>;
+    // Send
+    sendMessage: (recipientId: string, text: string) => Promise<InstagramSendResult>;
   };
 }
 
