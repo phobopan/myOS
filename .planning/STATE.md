@@ -1,13 +1,13 @@
 # Project State: phoebeOS
 
 **Last updated:** 2026-01-22
-**Current phase:** 3 (Gmail) - In Progress
+**Current phase:** 4 (Instagram) - In Progress
 
 ## Project Reference
 
 See: .planning/PROJECT.md
 **Core value:** Never miss an important message. One place to see everything that needs a response.
-**Current focus:** Phase 3 - Gmail Integration (In Progress)
+**Current focus:** Phase 4 - Instagram Integration (In Progress)
 
 ## Progress
 
@@ -16,25 +16,25 @@ See: .planning/PROJECT.md
 | 1 - Foundation | Complete | 100% |
 | 2 - iMessage | Complete | 100% |
 | 3 - Gmail | In Progress | 60% |
-| 4 - Instagram | Pending | 0% |
+| 4 - Instagram | In Progress | 25% |
 | 5 - Unified Inbox | Pending | 0% |
 | 6 - Polish | Pending | 0% |
 
-**Overall:** 2/6 phases complete (10/10 total plans done)
+**Overall:** 2/6 phases complete (11 total plans done)
 
 ## Current Position
 
-- **Phase:** 3 - Gmail (In Progress)
-- **Plan:** 03 of 05 complete
+- **Phase:** 4 - Instagram (In Progress)
+- **Plan:** 01 of 04 complete
 - **Status:** In progress
-- **Last activity:** 2026-01-22 - Completed 03-03-PLAN.md (Gmail thread view UI)
-- **Progress:** [██████░░░░] 60%
+- **Last activity:** 2026-01-22 - Completed 04-01-PLAN.md (Instagram auth foundation)
+- **Progress:** [██░░░░░░░░] 25%
 
 ## Performance Metrics
 
 | Metric | Value |
 |--------|-------|
-| Plans completed | 10 |
+| Plans completed | 11 |
 | Requirements delivered | 0/32 |
 | Phases completed | 2/6 |
 
@@ -83,6 +83,9 @@ See: .planning/PROJECT.md
 | HTML email rendering via dangerouslySetInnerHTML | 2026-01-22 | React's XSS protection prevents script injection |
 | Quoted text progressive disclosure | 2026-01-22 | Detect "On X wrote:" pattern, show toggle to reduce visual clutter |
 | Base64 attachment download with blob conversion | 2026-01-22 | IPC limitation requires base64 transfer, convert to blob on client |
+| Facebook success page redirect for Instagram OAuth | 2026-01-22 | Facebook deprecated localhost as redirect URI |
+| Page Access Token for Instagram API | 2026-01-22 | Instagram requires Page token, not User token |
+| 60-day token expiry check on init | 2026-01-22 | Clear expired tokens automatically on service startup |
 
 ### Open Questions
 
@@ -96,6 +99,7 @@ See: .planning/PROJECT.md
 
 - **node-mac-contacts:** Fails to build with Node.js 24 (N-API signature change). Contact names show as phone numbers until alternative implemented.
 - **Gmail OAuth credentials:** Users must manually create Google Cloud project and configure OAuth credentials before authentication works. No validation until authenticate() is called.
+- **Instagram OAuth credentials:** Users must create Facebook App with instagram_basic and instagram_manage_messages permissions. Requires Instagram Business/Creator account linked to Facebook Page.
 
 ### Technical Debt
 
@@ -106,13 +110,13 @@ None accumulated yet.
 ### Last Session
 
 - **Date:** 2026-01-22
-- **Activity:** Completed Plan 03-03 - Gmail thread view UI
-- **Stopped at:** Plan 03-03 complete, ready for Plan 03-04
+- **Activity:** Completed Plan 04-01 - Instagram auth foundation
+- **Stopped at:** Plan 04-01 complete, ready for Plan 04-02
 
 ### Next Session
 
-- **Resume with:** Plan 03-04 - Gmail composer UI
-- **Context needed:** Reply, reply all, forward functionality with compose form
+- **Resume with:** Plan 04-02 - Instagram IPC handlers and service
+- **Context needed:** Wire instagramAuthService to IPC, implement instagramService for conversations/messages
 
 ---
 *State initialized: 2026-01-20*
@@ -129,3 +133,4 @@ None accumulated yet.
 *Plan 03-01 completed: 2026-01-22*
 *Plan 03-02 completed: 2026-01-22*
 *Plan 03-03 completed: 2026-01-22*
+*Plan 04-01 completed: 2026-01-22*
