@@ -1,9 +1,12 @@
 interface SettingsProps {
   isOpen: boolean;
   onClose: () => void;
+  gmailAuth?: { authenticated: boolean; email: string | null };
+  onGmailConnect?: () => void;
+  onGmailDisconnect?: () => void;
 }
 
-export function Settings({ isOpen, onClose }: SettingsProps) {
+export function Settings({ isOpen, onClose, gmailAuth, onGmailConnect, onGmailDisconnect }: SettingsProps) {
   if (!isOpen) return null;
 
   return (
@@ -34,17 +37,47 @@ export function Settings({ isOpen, onClose }: SettingsProps) {
             <h3 className="text-sm font-medium text-white/70 uppercase tracking-wider mb-3">
               Connected Accounts
             </h3>
-            <div className="space-y-2">
+            <div className="space-y-3">
+              {/* iMessage */}
               <AccountRow
                 name="iMessage"
                 status="pending"
                 description="Requires Full Disk Access"
               />
-              <AccountRow
-                name="Gmail"
-                status="pending"
-                description="Not connected"
-              />
+
+              {/* Gmail */}
+              <div className="p-3 rounded-lg bg-white/5">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-2 h-2 rounded-full ${gmailAuth?.authenticated ? 'bg-green-500' : 'bg-yellow-500'}`} />
+                    <div>
+                      <div className="text-sm font-medium text-white">Gmail</div>
+                      {gmailAuth?.authenticated ? (
+                        <div className="text-xs text-white/70">{gmailAuth.email}</div>
+                      ) : (
+                        <div className="text-xs text-white/50">Not connected</div>
+                      )}
+                    </div>
+                  </div>
+                  {gmailAuth?.authenticated ? (
+                    <button
+                      onClick={onGmailDisconnect}
+                      className="text-xs text-red-400 hover:text-red-300 transition-colors px-3 py-1 rounded bg-white/10"
+                    >
+                      Disconnect
+                    </button>
+                  ) : (
+                    <button
+                      onClick={onGmailConnect}
+                      className="text-xs text-blue-400 hover:text-blue-300 transition-colors px-3 py-1 rounded bg-white/10"
+                    >
+                      Connect
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Instagram */}
               <AccountRow
                 name="Instagram"
                 status="pending"

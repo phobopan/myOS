@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Titlebar } from './components/Titlebar';
 import { Sidebar } from './components/Sidebar';
 import { ThreadView } from './components/ThreadView';
@@ -12,6 +12,13 @@ export default function App() {
   const [conversations, setConversations] = useState<IMessageConversation[]>([]);
   const [permissionStatus, setPermissionStatus] = useState<'checking' | 'authorized' | 'denied'>('checking');
   const [loading, setLoading] = useState(true);
+  const [gmailAuth, setGmailAuth] = useState<{ authenticated: boolean; email: string | null }>({
+    authenticated: false,
+    email: null,
+  });
+
+  // Keep a reference to the currently selected conversation so it persists after reply
+  const selectedConversationRef = useRef<IMessageConversation | null>(null);
 
   // Check permission and load data on mount
   useEffect(() => {
@@ -42,6 +49,15 @@ export default function App() {
     // Build contact cache
     await window.electron.buildContactCache();
 
+    // Check Gmail auth status
+    try {
+      const gmailStatus = await window.electron.gmail.isAuthenticated();
+      const gmailEmail = gmailStatus ? await window.electron.gmail.getUserEmail() : null;
+      setGmailAuth({ authenticated: gmailStatus, email: gmailEmail });
+    } catch (err) {
+      console.error('Failed to check Gmail auth:', err);
+    }
+
     // Load conversations
     await loadConversations();
     setLoading(false);
@@ -61,7 +77,37 @@ export default function App() {
     await initializeApp();
   };
 
-  const selectedConversation = conversations.find(c => c.id === selectedId) || null;
+  const handleGmailConnect = async () => {
+    try {
+      const success = await window.electron.gmail.authenticate();
+      if (success) {
+        const email = await window.electron.gmail.getUserEmail();
+        setGmailAuth({ authenticated: true, email });
+      }
+    } catch (err) {
+      console.error('Gmail auth failed:', err);
+    }
+  };
+
+  const handleGmailDisconnect = async () => {
+    await window.electron.gmail.disconnect();
+    setGmailAuth({ authenticated: false, email: null });
+  };
+
+  const handleSelectConversation = (id: number) => {
+    // When selecting a new conversation, clear the cached one
+    const conv = conversations.find(c => c.id === id);
+    if (conv) {
+      selectedConversationRef.current = conv;
+    }
+    setSelectedId(id);
+  };
+
+  // Use the conversation from the list if available, otherwise use the cached one
+  // This keeps the thread visible after replying until user clicks away
+  const selectedConversation =
+    conversations.find(c => c.id === selectedId) ||
+    (selectedId === selectedConversationRef.current?.id ? selectedConversationRef.current : null);
 
   // Loading state
   if (loading) {
@@ -93,7 +139,7 @@ export default function App() {
         <Sidebar
           conversations={conversations}
           selectedId={selectedId}
-          onSelect={setSelectedId}
+          onSelect={handleSelectConversation}
         />
         <ThreadView
           conversation={selectedConversation}
@@ -104,6 +150,9 @@ export default function App() {
       <Settings
         isOpen={settingsOpen}
         onClose={() => setSettingsOpen(false)}
+        gmailAuth={gmailAuth}
+        onGmailConnect={handleGmailConnect}
+        onGmailDisconnect={handleGmailDisconnect}
       />
     </div>
   );
