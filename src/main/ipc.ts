@@ -7,6 +7,8 @@ import { getDisplayImagePath, isHeicImage } from './services/imageService';
 import { TAPBACK_TYPES, isTapback } from './services/types';
 import { gmailAuthService } from './services/gmailAuthService';
 import { gmailService } from './services/gmailService';
+import { instagramAuthService } from './services/instagramAuthService';
+import { instagramService } from './services/instagramService';
 import type { IMessageConversation, IMessageMessage, Attachment, Reaction } from '../shared/ipcTypes';
 import type { GmailMessage } from './services/gmailTypes';
 
@@ -204,7 +206,15 @@ export function registerIpcHandlers(): void {
 
   // Gmail data handlers
   ipcMain.handle('gmail:getThreads', async (_, maxResults?: number) => {
-    return gmailService.getThreads(maxResults);
+    try {
+      console.log('Gmail: Fetching threads...');
+      const threads = await gmailService.getThreads(maxResults);
+      console.log(`Gmail: Fetched ${threads.length} threads`);
+      return threads;
+    } catch (error) {
+      console.error('Gmail: Failed to fetch threads:', error);
+      throw error;
+    }
   });
 
   ipcMain.handle('gmail:getThread', async (_, threadId: string) => {
@@ -245,5 +255,48 @@ export function registerIpcHandlers(): void {
     additionalBody?: string
   ) => {
     return gmailService.forward(originalMessage, to, additionalBody);
+  });
+
+  // Instagram auth handlers
+  ipcMain.handle('instagram:authenticate', async () => {
+    return instagramAuthService.authenticate();
+  });
+
+  ipcMain.handle('instagram:isAuthenticated', async () => {
+    return instagramAuthService.isAuthenticated();
+  });
+
+  ipcMain.handle('instagram:getAccountInfo', async () => {
+    return instagramAuthService.getAccountInfo();
+  });
+
+  ipcMain.handle('instagram:disconnect', async () => {
+    return instagramAuthService.disconnect();
+  });
+
+  // Instagram data handlers
+  ipcMain.handle('instagram:getConversations', async (_, limit?: number) => {
+    try {
+      console.log('Instagram: Fetching conversations...');
+      const conversations = await instagramService.getConversations(limit);
+      console.log(`Instagram: Fetched ${conversations.length} conversations`);
+      return conversations;
+    } catch (error) {
+      console.error('Instagram: Failed to fetch conversations:', error);
+      throw error;
+    }
+  });
+
+  ipcMain.handle('instagram:getMessages', async (_, conversationId: string, limit?: number) => {
+    try {
+      return await instagramService.getMessages(conversationId, limit);
+    } catch (error) {
+      console.error('Instagram: Failed to fetch messages:', error);
+      throw error;
+    }
+  });
+
+  ipcMain.handle('instagram:sendMessage', async (_, recipientId: string, text: string) => {
+    return instagramService.sendMessage(recipientId, text);
   });
 }
