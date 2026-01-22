@@ -1,7 +1,7 @@
 # Roadmap: phoebeOS
 
 **Created:** 2026-01-20
-**Updated:** 2026-01-21 (Phase 2 complete)
+**Updated:** 2026-01-22 (Phase 4 planned)
 **Depth:** Standard
 **Phases:** 6
 
@@ -92,6 +92,14 @@ Plans:
 
 **Goal:** Users can read and respond to Gmail threads with full email composition features
 
+**Plans:** 4 plans
+
+Plans:
+- [ ] 03-01-PLAN.md — OAuth authentication and secure token storage
+- [ ] 03-02-PLAN.md — Gmail service with thread fetching and send operations
+- [ ] 03-03-PLAN.md — Thread view UI with collapsible emails and attachments
+- [ ] 03-04-PLAN.md — Email composer with Reply/Reply All/Forward and app integration
+
 **Requirements:**
 - GMAIL-01: User can authenticate with Google via OAuth
 - GMAIL-02: Stream shows only emails from Primary inbox (excludes Promotions, Social, Updates)
@@ -122,6 +130,14 @@ Plans:
 ### Phase 4: Instagram
 
 **Goal:** Users can read and respond to Instagram DMs within the 24-hour messaging window
+
+**Plans:** 4 plans
+
+Plans:
+- [ ] 04-01-PLAN.md — Auth service and type definitions for Instagram Graph API
+- [ ] 04-02-PLAN.md — Instagram data service and IPC bridge
+- [ ] 04-03-PLAN.md — Thread view UI with countdown badge and Settings integration
+- [ ] 04-04-PLAN.md — Composer with character limit and app integration
 
 **Requirements:**
 - INSTA-01: User can authenticate via Facebook for Instagram Business/Creator account
@@ -214,11 +230,11 @@ Plans:
 |-------|------|--------|----------|
 | 1 | Foundation | Complete | 100% |
 | 2 | iMessage | Complete | 100% |
-| 3 | Gmail | Pending | 0% |
-| 4 | Instagram | Pending | 0% |
+| 3 | Gmail | Planned | 0% |
+| 4 | Instagram | Planned | 0% |
 | 5 | Unified Inbox | Pending | 0% |
 | 6 | Polish | Pending | 0% |
 
 ---
 *Roadmap created: 2026-01-20*
-*Last updated: 2026-01-21 (Phase 2 complete)*
+*Last updated: 2026-01-22 (Phase 4 planned)*
