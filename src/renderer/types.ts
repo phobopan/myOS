@@ -7,6 +7,12 @@ export type {
   GmailThread,
   GmailMessage,
   GmailAttachment,
+  InstagramWindowStatus,
+  InstagramConversation,
+  InstagramMessage,
+  InstagramAttachment,
+  InstagramSendResult,
+  InstagramAccountInfo,
 } from '../shared/ipcTypes';
 
 // Renderer-specific UI types

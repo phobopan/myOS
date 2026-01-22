@@ -91,3 +91,60 @@ export interface GmailAttachment {
   size: number;
   isInline: boolean;
 }
+
+// Instagram types (duplicated from instagramTypes.ts for renderer access)
+// TypeScript rootDir restrictions prevent direct import across main/renderer boundary
+
+export interface InstagramWindowStatus {
+  isOpen: boolean;
+  hoursRemaining: number;
+  minutesRemaining: number;
+  expiresAt: Date;
+  urgency: 'normal' | 'warning' | 'expired';
+}
+
+export interface InstagramConversation {
+  id: string;
+  recipientId: string;
+  recipientUsername: string;
+  recipientName: string | null;
+  updatedTime: Date;
+  lastMessage: {
+    text: string | null;
+    time: Date;
+    fromUser: boolean;
+  } | null;
+  windowStatus: InstagramWindowStatus;
+}
+
+export interface InstagramMessage {
+  id: string;
+  text: string | null;
+  time: Date;
+  fromUser: boolean;
+  from: { id: string; username?: string; name?: string };
+  attachments: InstagramAttachment[];
+}
+
+export interface InstagramAttachment {
+  type: 'image' | 'video' | 'audio' | 'share' | 'story_mention' | 'story_reply';
+  url?: string;
+  title?: string;
+  thumbnailUrl?: string;
+}
+
+export interface InstagramSendResult {
+  success: boolean;
+  messageId?: string;
+  recipientId?: string;
+  error?: string;
+  errorCode?: string;
+}
+
+export interface InstagramAccountInfo {
+  pageId: string;
+  pageName: string;
+  instagramAccountId: string;
+  instagramUsername: string;
+  instagramName: string | null;
+}
