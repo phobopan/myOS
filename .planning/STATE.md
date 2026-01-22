@@ -16,25 +16,25 @@ See: .planning/PROJECT.md
 | 1 - Foundation | Complete | 100% |
 | 2 - iMessage | Complete | 100% |
 | 3 - Gmail | In Progress | 60% |
-| 4 - Instagram | In Progress | 50% |
+| 4 - Instagram | In Progress | 75% |
 | 5 - Unified Inbox | Pending | 0% |
 | 6 - Polish | Pending | 0% |
 
-**Overall:** 2/6 phases complete (12 total plans done)
+**Overall:** 2/6 phases complete (13 total plans done)
 
 ## Current Position
 
 - **Phase:** 4 - Instagram (In Progress)
-- **Plan:** 02 of 04 complete
+- **Plan:** 03 of 04 complete
 - **Status:** In progress
-- **Last activity:** 2026-01-22 - Completed 04-02-PLAN.md (Instagram IPC bridge)
-- **Progress:** [█████░░░░░] 50%
+- **Last activity:** 2026-01-22 - Completed 04-03-PLAN.md (Instagram UI components)
+- **Progress:** [███████░░░] 75%
 
 ## Performance Metrics
 
 | Metric | Value |
 |--------|-------|
-| Plans completed | 12 |
+| Plans completed | 13 |
 | Requirements delivered | 0/32 |
 | Phases completed | 2/6 |
 
@@ -89,6 +89,9 @@ See: .planning/PROJECT.md
 | 180 requests/hour rate limit for Instagram | 2026-01-22 | Leave 20 buffer from 200 API limit for safety |
 | Window urgency levels | 2026-01-22 | normal (>1hr), warning (<1hr), expired (0) for 24-hour messaging window |
 | 1000 char Instagram message limit | 2026-01-22 | Enforced at service layer per CONTEXT.md specification |
+| Instagram icon gradient colors | 2026-01-22 | Yellow-pink-purple gradient matching Instagram brand |
+| Expired thread "Open in Instagram" button | 2026-01-22 | Replace composer with action button when 24-hour window expired |
+| Character counter orange at <100 | 2026-01-22 | Visual urgency for approaching message limit |
 
 ### Open Questions
 
@@ -113,13 +116,13 @@ None accumulated yet.
 ### Last Session
 
 - **Date:** 2026-01-22
-- **Activity:** Completed Plan 04-02 - Instagram IPC bridge
-- **Stopped at:** Plan 04-02 complete, ready for Plan 04-03
+- **Activity:** Completed Plan 04-03 - Instagram UI components
+- **Stopped at:** Plan 04-03 complete, ready for Plan 04-04
 
 ### Next Session
 
-- **Resume with:** Plan 04-03 - Instagram UI integration
-- **Context needed:** Build UI components for Instagram conversations using existing patterns from iMessage/Gmail
+- **Resume with:** Plan 04-04 - Instagram unified inbox integration
+- **Context needed:** Wire Instagram components into main App, add conversation list, complete the integration
 
 ---
 *State initialized: 2026-01-20*
@@ -138,3 +141,4 @@ None accumulated yet.
 *Plan 03-03 completed: 2026-01-22*
 *Plan 04-01 completed: 2026-01-22*
 *Plan 04-02 completed: 2026-01-22*
+*Plan 04-03 completed: 2026-01-22*
