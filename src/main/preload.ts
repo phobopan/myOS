@@ -45,4 +45,18 @@ contextBridge.exposeInMainWorld('electron', {
     forward: (originalMessage: any, to: string, additionalBody?: string) =>
       ipcRenderer.invoke('gmail:forward', originalMessage, to, additionalBody),
   },
+
+  // Instagram APIs
+  instagram: {
+    // Auth
+    authenticate: () => ipcRenderer.invoke('instagram:authenticate'),
+    isAuthenticated: () => ipcRenderer.invoke('instagram:isAuthenticated'),
+    getAccountInfo: () => ipcRenderer.invoke('instagram:getAccountInfo'),
+    disconnect: () => ipcRenderer.invoke('instagram:disconnect'),
+    // Data
+    getConversations: (limit?: number) => ipcRenderer.invoke('instagram:getConversations', limit),
+    getMessages: (conversationId: string, limit?: number) => ipcRenderer.invoke('instagram:getMessages', conversationId, limit),
+    // Send
+    sendMessage: (recipientId: string, text: string) => ipcRenderer.invoke('instagram:sendMessage', recipientId, text),
+  },
 });
