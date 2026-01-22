@@ -28,9 +28,21 @@ contextBridge.exposeInMainWorld('electron', {
 
   // Gmail APIs
   gmail: {
+    // Auth
     authenticate: () => ipcRenderer.invoke('gmail:authenticate'),
     isAuthenticated: () => ipcRenderer.invoke('gmail:isAuthenticated'),
     getUserEmail: () => ipcRenderer.invoke('gmail:getUserEmail'),
     disconnect: () => ipcRenderer.invoke('gmail:disconnect'),
+    // Data
+    getThreads: (maxResults?: number) => ipcRenderer.invoke('gmail:getThreads', maxResults),
+    getThread: (threadId: string) => ipcRenderer.invoke('gmail:getThread', threadId),
+    getAttachment: (messageId: string, attachmentId: string) => ipcRenderer.invoke('gmail:getAttachment', messageId, attachmentId),
+    // Send
+    sendReply: (threadId: string, originalMessageId: string, to: string, subject: string, body: string, options?: { cc?: string; bcc?: string }) =>
+      ipcRenderer.invoke('gmail:sendReply', threadId, originalMessageId, to, subject, body, options),
+    sendReplyAll: (threadId: string, originalMessage: any, body: string, options?: { subject?: string }) =>
+      ipcRenderer.invoke('gmail:sendReplyAll', threadId, originalMessage, body, options),
+    forward: (originalMessage: any, to: string, additionalBody?: string) =>
+      ipcRenderer.invoke('gmail:forward', originalMessage, to, additionalBody),
   },
 });

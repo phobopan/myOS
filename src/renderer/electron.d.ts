@@ -1,4 +1,4 @@
-import type { IMessageConversation, IMessageMessage } from './types';
+import type { IMessageConversation, IMessageMessage, GmailThread, GmailMessage, GmailAttachment } from './types';
 
 export type PermissionStatus = 'authorized' | 'denied' | 'not-determined';
 
@@ -35,10 +35,19 @@ interface ElectronAPI {
 
   // Gmail APIs
   gmail: {
+    // Auth
     authenticate: () => Promise<boolean>;
     isAuthenticated: () => Promise<boolean>;
     getUserEmail: () => Promise<string | null>;
     disconnect: () => Promise<void>;
+    // Data
+    getThreads: (maxResults?: number) => Promise<GmailThread[]>;
+    getThread: (threadId: string) => Promise<GmailThread>;
+    getAttachment: (messageId: string, attachmentId: string) => Promise<string>;  // base64
+    // Send
+    sendReply: (threadId: string, originalMessageId: string, to: string, subject: string, body: string, options?: { cc?: string; bcc?: string }) => Promise<GmailMessage>;
+    sendReplyAll: (threadId: string, originalMessage: GmailMessage, body: string, options?: { subject?: string }) => Promise<GmailMessage>;
+    forward: (originalMessage: GmailMessage, to: string, additionalBody?: string) => Promise<GmailMessage>;
   };
 }
 

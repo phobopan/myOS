@@ -56,3 +56,38 @@ export interface GmailAuthStatus {
   isAuthenticated: boolean;
   email?: string;
 }
+
+// Gmail data types (duplicated from gmailTypes.ts for renderer access)
+// TypeScript rootDir restrictions prevent direct import across main/renderer boundary
+
+export interface GmailThread {
+  id: string;
+  historyId: string;
+  messages: GmailMessage[];
+}
+
+export interface GmailMessage {
+  id: string;
+  threadId: string;
+  date: Date;
+  from: string;
+  to: string;
+  cc: string;
+  bcc: string;
+  subject: string;
+  messageId: string;
+  body: {
+    html: string;
+    text: string;
+  };
+  attachments: GmailAttachment[];
+  snippet: string;
+}
+
+export interface GmailAttachment {
+  id: string;
+  filename: string;
+  mimeType: string;
+  size: number;
+  isInline: boolean;
+}

@@ -6,7 +6,9 @@ import { sendMessage, sendToGroupChat, sendToChat } from './services/sendService
 import { getDisplayImagePath, isHeicImage } from './services/imageService';
 import { TAPBACK_TYPES, isTapback } from './services/types';
 import { gmailAuthService } from './services/gmailAuthService';
+import { gmailService } from './services/gmailService';
 import type { IMessageConversation, IMessageMessage, Attachment, Reaction } from '../shared/ipcTypes';
+import type { GmailMessage } from './services/gmailTypes';
 
 function expandTilde(filepath: string | null): string | null {
   if (!filepath) return null;
@@ -198,5 +200,50 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('gmail:disconnect', async () => {
     return gmailAuthService.disconnect();
+  });
+
+  // Gmail data handlers
+  ipcMain.handle('gmail:getThreads', async (_, maxResults?: number) => {
+    return gmailService.getThreads(maxResults);
+  });
+
+  ipcMain.handle('gmail:getThread', async (_, threadId: string) => {
+    return gmailService.getThread(threadId);
+  });
+
+  ipcMain.handle('gmail:getAttachment', async (_, messageId: string, attachmentId: string) => {
+    const buffer = await gmailService.getAttachment(messageId, attachmentId);
+    return buffer.toString('base64');  // Send as base64 string over IPC
+  });
+
+  ipcMain.handle('gmail:sendReply', async (
+    _,
+    threadId: string,
+    originalMessageId: string,
+    to: string,
+    subject: string,
+    body: string,
+    options?: { cc?: string; bcc?: string }
+  ) => {
+    return gmailService.sendReply(threadId, originalMessageId, to, subject, body, options);
+  });
+
+  ipcMain.handle('gmail:sendReplyAll', async (
+    _,
+    threadId: string,
+    originalMessage: GmailMessage,
+    body: string,
+    options?: { subject?: string }
+  ) => {
+    return gmailService.sendReplyAll(threadId, originalMessage, body, options);
+  });
+
+  ipcMain.handle('gmail:forward', async (
+    _,
+    originalMessage: GmailMessage,
+    to: string,
+    additionalBody?: string
+  ) => {
+    return gmailService.forward(originalMessage, to, additionalBody);
   });
 }

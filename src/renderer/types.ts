@@ -4,6 +4,9 @@ export type {
   Reaction,
   IMessageConversation,
   IMessageMessage,
+  GmailThread,
+  GmailMessage,
+  GmailAttachment,
 } from '../shared/ipcTypes';
 
 // Renderer-specific UI types
