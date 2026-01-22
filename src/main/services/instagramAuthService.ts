@@ -238,9 +238,9 @@ class InstagramAuthServiceClass {
     this.instagramBusinessAccountId = pageWithInstagram.instagram_business_account.id;
 
     const accountInfo: InstagramAccountInfo = {
-      pageId: this.pageId,
+      pageId: this.pageId!,
       pageName: pageWithInstagram.name,
-      instagramAccountId: this.instagramBusinessAccountId,
+      instagramAccountId: this.instagramBusinessAccountId!,
       instagramUsername: pageWithInstagram.instagram_business_account.username,
       instagramName: pageWithInstagram.instagram_business_account.name || null,
     };
