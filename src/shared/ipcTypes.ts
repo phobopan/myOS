@@ -11,6 +11,8 @@ export interface Attachment {
   path: string | null; // Full path (tilde expanded)
   size: number;
   isImage: boolean;
+  isVideo: boolean;
+  isAudio: boolean;
 }
 
 // Reaction (tapback) on a message
@@ -47,4 +49,10 @@ export interface IMessageMessage {
   attachments: Attachment[];
   reactions: Reaction[];
   isReaction: boolean; // True if this message is a tapback
+}
+
+// Gmail auth types
+export interface GmailAuthStatus {
+  isAuthenticated: boolean;
+  email?: string;
 }

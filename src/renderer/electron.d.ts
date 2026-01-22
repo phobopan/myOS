@@ -27,6 +27,19 @@ interface ElectronAPI {
     sendToGroupChat: (chatName: string, message: string) => Promise<SendResult>;
     sendToChat: (chatIdentifier: string, message: string) => Promise<SendResult>;
   };
+
+  // Shell APIs for opening files
+  shell: {
+    openPath: (path: string) => Promise<string>;
+  };
+
+  // Gmail APIs
+  gmail: {
+    authenticate: () => Promise<boolean>;
+    isAuthenticated: () => Promise<boolean>;
+    getUserEmail: () => Promise<string | null>;
+    disconnect: () => Promise<void>;
+  };
 }
 
 declare global {

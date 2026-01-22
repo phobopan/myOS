@@ -20,4 +20,17 @@ contextBridge.exposeInMainWorld('electron', {
     sendToGroupChat: (chatName: string, message: string) => ipcRenderer.invoke('imessage:sendToGroupChat', chatName, message),
     sendToChat: (chatIdentifier: string, message: string) => ipcRenderer.invoke('imessage:sendToChat', chatIdentifier, message),
   },
+
+  // Shell APIs for opening files
+  shell: {
+    openPath: (path: string) => ipcRenderer.invoke('shell:openPath', path),
+  },
+
+  // Gmail APIs
+  gmail: {
+    authenticate: () => ipcRenderer.invoke('gmail:authenticate'),
+    isAuthenticated: () => ipcRenderer.invoke('gmail:isAuthenticated'),
+    getUserEmail: () => ipcRenderer.invoke('gmail:getUserEmail'),
+    disconnect: () => ipcRenderer.invoke('gmail:disconnect'),
+  },
 });

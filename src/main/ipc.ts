@@ -1,9 +1,11 @@
-import { ipcMain, app } from 'electron';
+import { ipcMain, app, shell } from 'electron';
 import { iMessageService, fromAppleTime, parseAttributedBody } from './services/iMessageService';
 import { resolveHandle, buildContactCache, isContactsCacheBuilt } from './services/contactService';
 import { checkFullDiskAccess, requestFullDiskAccess } from './services/permissionService';
 import { sendMessage, sendToGroupChat, sendToChat } from './services/sendService';
+import { getDisplayImagePath, isHeicImage } from './services/imageService';
 import { TAPBACK_TYPES, isTapback } from './services/types';
+import { gmailAuthService } from './services/gmailAuthService';
 import type { IMessageConversation, IMessageMessage, Attachment, Reaction } from '../shared/ipcTypes';
 
 function expandTilde(filepath: string | null): string | null {
@@ -104,18 +106,36 @@ export function registerIpcHandlers(): void {
       }
     }
 
-    return regularMessages.map(msg => {
+    return Promise.all(regularMessages.map(async msg => {
       const senderInfo = resolveHandle(msg.sender_handle);
 
       // Get attachments
       const dbAttachments = msg.cache_has_attachments ? iMessageService.getAttachments(msg.id) : [];
-      const attachments: Attachment[] = dbAttachments.map(att => ({
-        id: att.guid,
-        filename: att.transfer_name || att.filename,
-        mimeType: att.mime_type,
-        path: expandTilde(att.filename),
-        size: att.total_bytes,
-        isImage: att.mime_type?.startsWith('image/') || att.uti?.includes('image') || false,
+      const attachments: Attachment[] = await Promise.all(dbAttachments.map(async att => {
+        const mime = att.mime_type?.toLowerCase() || '';
+        const uti = att.uti?.toLowerCase() || '';
+        const originalPath = expandTilde(att.filename);
+
+        // Check if this is an image (including HEIC)
+        const isImage = mime.startsWith('image/') || uti.includes('image') ||
+          isHeicImage(originalPath, att.mime_type, att.uti);
+
+        // Convert HEIC to JPEG for display
+        let displayPath = originalPath;
+        if (isImage && originalPath) {
+          displayPath = await getDisplayImagePath(originalPath, att.mime_type, att.uti);
+        }
+
+        return {
+          id: att.guid,
+          filename: att.transfer_name || att.filename,
+          mimeType: att.mime_type,
+          path: displayPath,
+          size: att.total_bytes,
+          isImage,
+          isVideo: mime.startsWith('video/') || uti.includes('video') || uti.includes('movie'),
+          isAudio: mime.startsWith('audio/') || uti.includes('audio'),
+        };
       }));
 
       // Get reactions for this message
@@ -139,7 +159,7 @@ export function registerIpcHandlers(): void {
         reactions,
         isReaction: false,
       };
-    });
+    }));
   });
 
   ipcMain.handle('imessage:isAccessible', () => {
@@ -156,5 +176,27 @@ export function registerIpcHandlers(): void {
 
   ipcMain.handle('imessage:sendToChat', async (_, chatIdentifier: string, message: string) => {
     return sendToChat(chatIdentifier, message);
+  });
+
+  // Shell handlers
+  ipcMain.handle('shell:openPath', async (_, filePath: string) => {
+    return shell.openPath(filePath);
+  });
+
+  // Gmail auth handlers
+  ipcMain.handle('gmail:authenticate', async () => {
+    return gmailAuthService.authenticate();
+  });
+
+  ipcMain.handle('gmail:isAuthenticated', async () => {
+    return gmailAuthService.isAuthenticated();
+  });
+
+  ipcMain.handle('gmail:getUserEmail', async () => {
+    return gmailAuthService.getUserEmail();
+  });
+
+  ipcMain.handle('gmail:disconnect', async () => {
+    return gmailAuthService.disconnect();
   });
 }

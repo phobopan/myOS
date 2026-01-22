@@ -1,7 +1,7 @@
 import { google } from 'googleapis';
-import { OAuth2Client } from 'google-auth-library';
-import { app, shell, safeStorage } from 'electron';
-import Store from 'electron-store';
+import { OAuth2Client, CodeChallengeMethod } from 'google-auth-library';
+import { shell, safeStorage } from 'electron';
+import ElectronStore from 'electron-store';
 import * as crypto from 'crypto';
 import * as http from 'http';
 import { GmailTokens } from './gmailTypes';
@@ -12,11 +12,13 @@ const REDIRECT_URI = `http://127.0.0.1:${REDIRECT_PORT}/oauth/callback`;
 const SCOPES = ['https://www.googleapis.com/auth/gmail.modify'];
 
 // Token storage configuration
-const store = new Store<{
+interface StoreSchema {
   gmail_tokens?: string | Buffer; // Encrypted or plain JSON string
   gmail_tokens_encrypted?: boolean;
   gmail_user_email?: string;
-}>({ name: 'gmail-auth' });
+}
+
+const store = new ElectronStore<StoreSchema>({ name: 'gmail-auth' });
 
 class GmailAuthServiceClass {
   private oauth2Client: OAuth2Client | null = null;
@@ -147,7 +149,7 @@ class GmailAuthServiceClass {
           scope: SCOPES,
           state: state,
           code_challenge: codeChallenge,
-          code_challenge_method: 'S256',
+          code_challenge_method: CodeChallengeMethod.S256,
           prompt: 'consent', // Always request refresh_token
         });
 
@@ -280,7 +282,7 @@ class GmailAuthServiceClass {
    * Get authenticated user's email
    */
   getUserEmail(): string | null {
-    return store.get('gmail_user_email', null);
+    return store.get('gmail_user_email') ?? null;
   }
 
   /**

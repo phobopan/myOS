@@ -20,7 +20,7 @@
   "dependencies": {
     "better-sqlite3": "^12.6.2",
     "bplist-parser": "^0.3.2",
-    "electron-store": "^11.0.2",
+    "electron-store": "^8.2.0",
     "googleapis": "^170.1.0",
     "libphonenumber-js": "^1.12.34",
     "node-mac-permissions": "^2.5.0",
