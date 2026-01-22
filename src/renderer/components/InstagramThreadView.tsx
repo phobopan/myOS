@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import type { InstagramConversation, InstagramMessage as InstagramMessageType } from '../types';
 import { InstagramMessage } from './InstagramMessage';
 import { CountdownBadge } from './CountdownBadge';
+import { InstagramComposer } from './InstagramComposer';
 
 function InstagramIcon() {
   return (
@@ -25,7 +26,6 @@ export function InstagramThreadView({ conversation, onSendMessage }: InstagramTh
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { id, recipientId, recipientUsername, recipientName, windowStatus } = conversation;
-  const isExpired = !windowStatus.isOpen || windowStatus.urgency === 'expired';
 
   useEffect(() => {
     loadMessages();
@@ -92,87 +92,19 @@ export function InstagramThreadView({ conversation, onSendMessage }: InstagramTh
           )}
         </div>
 
-        {/* Footer: Composer or Expired notice */}
-        {isExpired ? (
-          <div className="px-4 py-3 border-t border-white/10 bg-white/5">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-white/50">
-                24-hour messaging window has expired
-              </p>
-              <button
-                onClick={() => window.electron.shell.openPath('https://instagram.com/direct/inbox')}
-                className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity"
-              >
-                Open in Instagram
-              </button>
-            </div>
-          </div>
-        ) : (
-          <InstagramComposerPlaceholder
-            recipientId={recipientId}
-            onSend={onSendMessage}
-          />
-        )}
-      </div>
-    </main>
-  );
-}
-
-// Placeholder composer - will be replaced by full InstagramComposer in Plan 04-04
-function InstagramComposerPlaceholder({
-  recipientId,
-  onSend
-}: {
-  recipientId: string;
-  onSend?: (recipientId: string, text: string) => Promise<void>;
-}) {
-  const [text, setText] = useState('');
-  const [sending, setSending] = useState(false);
-
-  const charLimit = 1000;
-  const remaining = charLimit - text.length;
-
-  async function handleSend() {
-    if (!text.trim() || !onSend) return;
-    setSending(true);
-    try {
-      await onSend(recipientId, text.trim());
-      setText('');
-    } finally {
-      setSending(false);
-    }
-  }
-
-  return (
-    <div className="px-4 py-3 border-t border-white/10">
-      <div className="flex items-end gap-2">
-        <textarea
-          value={text}
-          onChange={(e) => setText(e.target.value.slice(0, charLimit))}
-          placeholder="Type a message..."
-          className="flex-1 bg-white/10 rounded-lg px-3 py-2 text-white placeholder-white/40 resize-none min-h-[40px] max-h-[120px] focus:outline-none focus:ring-1 focus:ring-white/30"
-          rows={1}
-          disabled={sending}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              handleSend();
+        {/* Footer: Composer handles both active and expired states */}
+        <InstagramComposer
+          recipientId={recipientId}
+          windowStatus={windowStatus}
+          onSend={async (recipientId, text) => {
+            if (onSendMessage) {
+              await onSendMessage(recipientId, text);
+              // Refresh messages after send
+              loadMessages();
             }
           }}
         />
-        <div className="flex flex-col items-end gap-1">
-          <span className={`text-xs ${remaining < 100 ? 'text-orange-400' : 'text-white/40'}`}>
-            {remaining}
-          </span>
-          <button
-            onClick={handleSend}
-            disabled={!text.trim() || sending}
-            className="px-4 py-2 bg-blue-500 text-white text-sm font-medium rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {sending ? 'Sending...' : 'Send'}
-          </button>
-        </div>
       </div>
-    </div>
+    </main>
   );
 }
