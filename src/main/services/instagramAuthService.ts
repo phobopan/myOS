@@ -2,20 +2,18 @@ import { BrowserWindow, safeStorage } from 'electron';
 import ElectronStore from 'electron-store';
 import axios from 'axios';
 import * as crypto from 'crypto';
+import * as http from 'http';
 import { InstagramTokens, InstagramAccountInfo } from './instagramTypes';
 
-// OAuth configuration
-const REDIRECT_URI = 'https://www.facebook.com/connect/login_success.html';
-const GRAPH_API_VERSION = 'v19.0';
-const GRAPH_API_BASE = `https://graph.facebook.com/${GRAPH_API_VERSION}`;
+// OAuth configuration - Instagram API with Instagram Login
+// Docs: https://developers.facebook.com/docs/instagram-platform/instagram-api-with-instagram-login
+const OAUTH_PORT = 8848;
+const REDIRECT_URI = `http://127.0.0.1:${OAUTH_PORT}/callback`;
 
 // Required scopes for Instagram DM access
 const SCOPES = [
-  'instagram_basic',
-  'instagram_manage_messages',
-  'pages_show_list',
-  'pages_manage_metadata',
-  'pages_read_engagement',
+  'instagram_business_basic',
+  'instagram_business_manage_messages',
 ].join(',');
 
 // Token storage configuration
@@ -28,9 +26,8 @@ interface StoreSchema {
 const store = new ElectronStore<StoreSchema>({ name: 'instagram-auth' });
 
 class InstagramAuthServiceClass {
-  private pageAccessToken: string | null = null;
-  private pageId: string | null = null;
-  private instagramBusinessAccountId: string | null = null;
+  private accessToken: string | null = null;
+  private instagramUserId: string | null = null;
   private accountInfo: InstagramAccountInfo | null = null;
 
   constructor() {
@@ -49,9 +46,8 @@ class InstagramAuthServiceClass {
       if (tokens && accountInfo) {
         // Check if token is expired
         if (tokens.expiresAt > Date.now()) {
-          this.pageAccessToken = tokens.accessToken;
-          this.pageId = accountInfo.pageId;
-          this.instagramBusinessAccountId = accountInfo.instagramAccountId;
+          this.accessToken = tokens.accessToken;
+          this.instagramUserId = accountInfo.instagramAccountId;
           this.accountInfo = accountInfo;
           console.log('Instagram session restored from stored tokens');
         } else {
@@ -151,118 +147,110 @@ class InstagramAuthServiceClass {
     store.delete('instagram_tokens');
     store.delete('instagram_tokens_encrypted');
     store.delete('instagram_account_info');
-    this.pageAccessToken = null;
-    this.pageId = null;
-    this.instagramBusinessAccountId = null;
+    this.accessToken = null;
+    this.instagramUserId = null;
     this.accountInfo = null;
   }
 
   /**
-   * Exchange authorization code for access token
+   * Exchange authorization code for short-lived access token
    */
-  private async exchangeCodeForToken(code: string): Promise<InstagramTokens> {
-    const appId = process.env.FACEBOOK_APP_ID;
-    const appSecret = process.env.FACEBOOK_APP_SECRET;
+  private async exchangeCodeForToken(code: string): Promise<string> {
+    const appId = process.env.INSTAGRAM_APP_ID;
+    const appSecret = process.env.INSTAGRAM_APP_SECRET;
 
     if (!appId || !appSecret) {
       throw new Error(
-        'Facebook App credentials not configured. Please set FACEBOOK_APP_ID and FACEBOOK_APP_SECRET environment variables.'
+        'Instagram App credentials not configured. Please set INSTAGRAM_APP_ID and INSTAGRAM_APP_SECRET environment variables.'
       );
     }
 
-    // Exchange code for short-lived user access token
-    const tokenResponse = await axios.get(`${GRAPH_API_BASE}/oauth/access_token`, {
-      params: {
-        client_id: appId,
-        client_secret: appSecret,
-        redirect_uri: REDIRECT_URI,
-        code: code,
-      },
-    });
+    // Exchange code for short-lived token
+    // Instagram uses form-urlencoded for this endpoint
+    const params = new URLSearchParams();
+    params.append('client_id', appId);
+    params.append('client_secret', appSecret);
+    params.append('grant_type', 'authorization_code');
+    params.append('redirect_uri', REDIRECT_URI);
+    params.append('code', code);
 
-    const shortLivedToken = tokenResponse.data.access_token;
+    const response = await axios.post(
+      'https://api.instagram.com/oauth/access_token',
+      params,
+      {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+      }
+    );
 
-    // Exchange for long-lived user access token (60 days)
-    const longLivedResponse = await axios.get(`${GRAPH_API_BASE}/oauth/access_token`, {
+    return response.data.access_token;
+  }
+
+  /**
+   * Exchange short-lived token for long-lived token (60 days)
+   */
+  private async exchangeForLongLivedToken(shortLivedToken: string): Promise<InstagramTokens> {
+    const appSecret = process.env.INSTAGRAM_APP_SECRET;
+
+    if (!appSecret) {
+      throw new Error('INSTAGRAM_APP_SECRET not configured');
+    }
+
+    const response = await axios.get('https://graph.instagram.com/access_token', {
       params: {
-        grant_type: 'fb_exchange_token',
-        client_id: appId,
+        grant_type: 'ig_exchange_token',
         client_secret: appSecret,
-        fb_exchange_token: shortLivedToken,
+        access_token: shortLivedToken,
       },
     });
 
     // Default to 60 days if expires_in not provided
-    const expiresIn = longLivedResponse.data.expires_in || 60 * 24 * 60 * 60;
+    const expiresIn = response.data.expires_in || 60 * 24 * 60 * 60;
 
     return {
-      accessToken: longLivedResponse.data.access_token,
+      accessToken: response.data.access_token,
       expiresAt: Date.now() + expiresIn * 1000,
     };
   }
 
   /**
-   * Initialize service from user access token
-   * Gets Page Access Token and Instagram Business Account ID
+   * Get user info from Instagram
    */
-  private async initializeFromToken(userAccessToken: string): Promise<InstagramAccountInfo> {
-    // Get user's Pages with Instagram Business Account
-    const response = await axios.get(`${GRAPH_API_BASE}/me/accounts`, {
+  private async getUserInfo(accessToken: string): Promise<InstagramAccountInfo> {
+    const response = await axios.get('https://graph.instagram.com/me', {
       params: {
-        access_token: userAccessToken,
-        fields: 'id,name,access_token,instagram_business_account{id,username,name}',
+        fields: 'user_id,username,name',
+        access_token: accessToken,
       },
     });
 
-    const pages = response.data.data;
+    const { user_id, username, name } = response.data;
 
-    if (!pages || pages.length === 0) {
-      throw new Error(
-        'No Facebook Pages found. Please create a Facebook Page and link it to your Instagram Business/Creator account.'
-      );
-    }
+    this.instagramUserId = user_id;
 
-    // Find a Page with linked Instagram Business Account
-    const pageWithInstagram = pages.find((p: any) => p.instagram_business_account);
-
-    if (!pageWithInstagram) {
-      throw new Error(
-        'No Instagram Business/Creator account linked to your Facebook Pages. ' +
-          'Please link your Instagram account to a Facebook Page in Meta Business Suite.'
-      );
-    }
-
-    // Store Page Access Token (not user token) for API calls
-    this.pageId = pageWithInstagram.id;
-    this.pageAccessToken = pageWithInstagram.access_token;
-    this.instagramBusinessAccountId = pageWithInstagram.instagram_business_account.id;
-
-    const accountInfo: InstagramAccountInfo = {
-      pageId: this.pageId!,
-      pageName: pageWithInstagram.name,
-      instagramAccountId: this.instagramBusinessAccountId!,
-      instagramUsername: pageWithInstagram.instagram_business_account.username,
-      instagramName: pageWithInstagram.instagram_business_account.name || null,
+    return {
+      pageId: user_id, // For compatibility with existing types
+      pageName: name || username,
+      instagramAccountId: user_id,
+      instagramUsername: username,
+      instagramName: name || null,
     };
-
-    this.accountInfo = accountInfo;
-
-    return accountInfo;
   }
 
   /**
    * Perform OAuth authentication flow
-   * Opens BrowserWindow and intercepts Facebook success page redirect
+   * Uses Instagram Login with localhost callback
    */
   async authenticate(): Promise<InstagramAccountInfo> {
     return new Promise((resolve, reject) => {
       try {
-        const appId = process.env.FACEBOOK_APP_ID;
+        const appId = process.env.INSTAGRAM_APP_ID;
 
         if (!appId) {
           reject(
             new Error(
-              'Facebook App credentials not configured. Please set FACEBOOK_APP_ID environment variable.'
+              'Instagram App credentials not configured. Please set INSTAGRAM_APP_ID environment variable.'
             )
           );
           return;
@@ -271,98 +259,142 @@ class InstagramAuthServiceClass {
         // Generate state for CSRF protection
         const state = crypto.randomBytes(16).toString('hex');
 
-        // Build authorization URL
-        const authUrl =
-          `https://www.facebook.com/${GRAPH_API_VERSION}/dialog/oauth?` +
-          `client_id=${appId}` +
-          `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
-          `&scope=${SCOPES}` +
-          `&response_type=code` +
-          `&state=${state}`;
-
-        // Create BrowserWindow for authentication
-        const authWindow = new BrowserWindow({
-          width: 600,
-          height: 800,
-          webPreferences: {
-            nodeIntegration: false,
-            contextIsolation: true,
-          },
-        });
-
-        authWindow.loadURL(authUrl);
-
+        let server: http.Server | null = null;
+        let authWindow: BrowserWindow | null = null;
         let resolved = false;
 
-        // Intercept redirect to Facebook success page
-        authWindow.webContents.on('will-redirect', async (event, url) => {
-          if (url.startsWith(REDIRECT_URI)) {
-            event.preventDefault();
+        const cleanup = () => {
+          if (server) {
+            server.close();
+            server = null;
+          }
+          if (authWindow && !authWindow.isDestroyed()) {
+            authWindow.close();
+            authWindow = null;
+          }
+        };
 
-            const urlParams = new URL(url);
-            const code = urlParams.searchParams.get('code');
-            const returnedState = urlParams.searchParams.get('state');
-            const error = urlParams.searchParams.get('error');
-            const errorDescription = urlParams.searchParams.get('error_description');
+        // Create local server to receive OAuth callback
+        server = http.createServer(async (req, res) => {
+          if (!req.url?.startsWith('/callback')) {
+            res.writeHead(404);
+            res.end('Not found');
+            return;
+          }
 
-            if (error) {
-              authWindow.close();
-              resolved = true;
-              reject(new Error(`OAuth error: ${error} - ${errorDescription || 'Unknown error'}`));
-              return;
-            }
+          const url = new URL(req.url, `http://127.0.0.1:${OAUTH_PORT}`);
+          const code = url.searchParams.get('code');
+          const returnedState = url.searchParams.get('state');
+          const error = url.searchParams.get('error');
+          const errorDescription = url.searchParams.get('error_description');
 
-            if (returnedState !== state) {
-              authWindow.close();
-              resolved = true;
-              reject(new Error('State mismatch - possible CSRF attack'));
-              return;
-            }
+          // Send response to browser
+          res.writeHead(200, { 'Content-Type': 'text/html' });
+          res.end(`
+            <html>
+              <body style="font-family: system-ui; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; background: #1a1a2e; color: white;">
+                <div style="text-align: center;">
+                  <h1>${error ? '❌ Authentication Failed' : '✓ Authentication Successful'}</h1>
+                  <p>${error ? errorDescription || error : 'You can close this window.'}</p>
+                </div>
+              </body>
+            </html>
+          `);
 
-            if (!code) {
-              authWindow.close();
-              resolved = true;
-              reject(new Error('No authorization code received'));
-              return;
-            }
+          if (resolved) return;
 
-            try {
-              // Exchange code for tokens
-              const tokens = await this.exchangeCodeForToken(code);
+          if (error) {
+            resolved = true;
+            cleanup();
+            reject(new Error(`OAuth error: ${error} - ${errorDescription || 'Unknown error'}`));
+            return;
+          }
 
-              // Initialize service with Page Access Token
-              const accountInfo = await this.initializeFromToken(tokens.accessToken);
+          if (returnedState !== state) {
+            resolved = true;
+            cleanup();
+            reject(new Error('State mismatch - possible CSRF attack'));
+            return;
+          }
 
-              // Save tokens and account info (use Page Access Token for storage)
-              const pageTokens: InstagramTokens = {
-                accessToken: this.pageAccessToken!,
-                expiresAt: tokens.expiresAt,
-              };
-              this.saveTokens(pageTokens, accountInfo);
+          if (!code) {
+            resolved = true;
+            cleanup();
+            reject(new Error('No authorization code received'));
+            return;
+          }
 
-              authWindow.close();
-              resolved = true;
-              resolve(accountInfo);
-            } catch (exchangeError) {
-              authWindow.close();
-              resolved = true;
-              reject(exchangeError);
-            }
+          try {
+            // Exchange code for short-lived token
+            const shortLivedToken = await this.exchangeCodeForToken(code);
+
+            // Exchange for long-lived token
+            const tokens = await this.exchangeForLongLivedToken(shortLivedToken);
+
+            // Get user info
+            const accountInfo = await this.getUserInfo(tokens.accessToken);
+
+            // Save tokens and account info
+            this.accessToken = tokens.accessToken;
+            this.accountInfo = accountInfo;
+            this.saveTokens(tokens, accountInfo);
+
+            resolved = true;
+            cleanup();
+            resolve(accountInfo);
+          } catch (exchangeError) {
+            resolved = true;
+            cleanup();
+            reject(exchangeError);
           }
         });
 
-        // Handle window close without completing auth
-        authWindow.on('closed', () => {
+        server.listen(OAUTH_PORT, '127.0.0.1', () => {
+          // Build authorization URL for Instagram Login
+          const authUrl =
+            `https://www.instagram.com/oauth/authorize?` +
+            `client_id=${appId}` +
+            `&redirect_uri=${encodeURIComponent(REDIRECT_URI)}` +
+            `&scope=${encodeURIComponent(SCOPES)}` +
+            `&response_type=code` +
+            `&state=${state}`;
+
+          // Create BrowserWindow for authentication
+          authWindow = new BrowserWindow({
+            width: 600,
+            height: 800,
+            webPreferences: {
+              nodeIntegration: false,
+              contextIsolation: true,
+            },
+          });
+
+          authWindow.loadURL(authUrl);
+
+          // Handle window close without completing auth
+          authWindow.on('closed', () => {
+            authWindow = null;
+            if (!resolved) {
+              resolved = true;
+              cleanup();
+              reject(new Error('Authentication window closed before completing'));
+            }
+          });
+        });
+
+        server.on('error', (err) => {
           if (!resolved) {
-            reject(new Error('Authentication window closed before completing'));
+            resolved = true;
+            cleanup();
+            reject(new Error(`Failed to start auth server: ${err.message}`));
           }
         });
 
         // Timeout after 5 minutes
         setTimeout(() => {
-          if (!resolved && !authWindow.isDestroyed()) {
-            authWindow.close();
+          if (!resolved) {
             resolved = true;
+            cleanup();
             reject(new Error('Authentication timeout - no response received within 5 minutes'));
           }
         }, 5 * 60 * 1000);
@@ -376,12 +408,12 @@ class InstagramAuthServiceClass {
    * Check if user is authenticated
    */
   isAuthenticated(): boolean {
-    if (!this.pageAccessToken || !this.pageId || !this.instagramBusinessAccountId) {
+    if (!this.accessToken || !this.instagramUserId) {
       // Try to restore from storage
       this.loadStoredTokens();
     }
 
-    return !!(this.pageAccessToken && this.pageId && this.instagramBusinessAccountId);
+    return !!(this.accessToken && this.instagramUserId);
   }
 
   /**
@@ -392,36 +424,36 @@ class InstagramAuthServiceClass {
   }
 
   /**
-   * Get Page Access Token for API calls
+   * Get access token for API calls
    * Throws if not authenticated
    */
   getPageAccessToken(): string {
-    if (!this.pageAccessToken) {
+    if (!this.accessToken) {
       throw new Error('Not authenticated with Instagram. Please call authenticate() first.');
     }
-    return this.pageAccessToken;
+    return this.accessToken;
   }
 
   /**
-   * Get Page ID for API calls
+   * Get Page ID for API calls (returns user ID for Instagram Login)
    * Throws if not authenticated
    */
   getPageId(): string {
-    if (!this.pageId) {
+    if (!this.instagramUserId) {
       throw new Error('Not authenticated with Instagram. Please call authenticate() first.');
     }
-    return this.pageId;
+    return this.instagramUserId;
   }
 
   /**
-   * Get Instagram Business Account ID for API calls
+   * Get Instagram Account ID for API calls
    * Throws if not authenticated
    */
   getInstagramAccountId(): string {
-    if (!this.instagramBusinessAccountId) {
+    if (!this.instagramUserId) {
       throw new Error('Not authenticated with Instagram. Please call authenticate() first.');
     }
-    return this.instagramBusinessAccountId;
+    return this.instagramUserId;
   }
 
   /**

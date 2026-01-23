@@ -7,7 +7,8 @@ import type {
   WindowStatus
 } from './instagramTypes';
 
-const GRAPH_API_BASE = 'https://graph.facebook.com/v19.0';
+// Instagram API with Instagram Login uses graph.instagram.com
+const GRAPH_API_BASE = 'https://graph.instagram.com/v21.0';
 
 /**
  * Rate limiter to prevent exceeding 200 requests/hour
@@ -55,14 +56,14 @@ class InstagramServiceClass {
     this.ensureAuthenticated();
     await this.rateLimiter.throttle();
 
-    const pageId = instagramAuthService.getPageId();
-    const pageAccessToken = instagramAuthService.getPageAccessToken();
+    const accessToken = instagramAuthService.getPageAccessToken();
     const instagramAccountId = instagramAuthService.getInstagramAccountId();
 
-    const response = await axios.get(`${GRAPH_API_BASE}/${pageId}/conversations`, {
+    // Instagram Login uses me/conversations endpoint
+    const response = await axios.get(`${GRAPH_API_BASE}/me/conversations`, {
       params: {
         platform: 'instagram',
-        access_token: pageAccessToken,
+        access_token: accessToken,
         fields: 'id,participants,updated_time,messages.limit(1){message,created_time,from}',
         limit
       }
@@ -104,12 +105,12 @@ class InstagramServiceClass {
     this.ensureAuthenticated();
     await this.rateLimiter.throttle();
 
-    const pageAccessToken = instagramAuthService.getPageAccessToken();
+    const accessToken = instagramAuthService.getPageAccessToken();
     const instagramAccountId = instagramAuthService.getInstagramAccountId();
 
     const response = await axios.get(`${GRAPH_API_BASE}/${conversationId}`, {
       params: {
-        access_token: pageAccessToken,
+        access_token: accessToken,
         fields: `messages.limit(${limit}){id,message,created_time,from,attachments}`
       }
     });
@@ -149,18 +150,18 @@ class InstagramServiceClass {
 
     await this.rateLimiter.throttle();
 
-    const pageId = instagramAuthService.getPageId();
-    const pageAccessToken = instagramAuthService.getPageAccessToken();
+    const accessToken = instagramAuthService.getPageAccessToken();
 
     try {
+      // Instagram Login uses me/messages endpoint
       const response = await axios.post(
-        `${GRAPH_API_BASE}/${pageId}/messages`,
+        `${GRAPH_API_BASE}/me/messages`,
         {
           recipient: { id: recipientId },
           message: { text },
           messaging_type: 'RESPONSE'
         },
-        { params: { access_token: pageAccessToken } }
+        { params: { access_token: accessToken } }
       );
 
       return {
