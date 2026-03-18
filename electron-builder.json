@@ -1,6 +1,6 @@
 {
-  "appId": "com.phoebe.phoebeos",
-  "productName": "phoebeOS",
+  "appId": "com.phoebe.myos",
+  "productName": "myOS",
   "directories": {
     "output": "release",
     "buildResources": "build"
@@ -17,8 +17,10 @@
       }
     ],
     "darkModeSupport": true,
-    "hardenedRuntime": true,
-    "gatekeeperAssess": false
+    "hardenedRuntime": false,
+    "gatekeeperAssess": false,
+    "identity": null,
+    "icon": "build/icon.icns"
   },
   "dmg": {
     "contents": [
@@ -33,5 +35,7 @@
         "path": "/Applications"
       }
     ]
-  }
+  },
+  "afterSign": [],
+  "npmRebuild": true
 }

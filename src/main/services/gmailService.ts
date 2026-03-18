@@ -46,12 +46,19 @@ function extractAttachments(payload: gmail_v1.Schema$MessagePart | undefined): G
         h => h.name?.toLowerCase() === 'content-disposition'
       )?.value || '';
 
+      // Extract Content-ID for CID inline image matching (strip angle brackets)
+      const contentIdHeader = part.headers?.find(
+        h => h.name?.toLowerCase() === 'content-id'
+      )?.value || '';
+      const contentId = contentIdHeader.replace(/^<|>$/g, '') || undefined;
+
       attachments.push({
         id: part.body.attachmentId,
         filename: part.filename,
         mimeType: part.mimeType || 'application/octet-stream',
         size: part.body.size || 0,
         isInline: contentDisposition.includes('inline'),
+        contentId,
       });
     }
     if (part.parts) {
@@ -81,6 +88,7 @@ function parseMessage(msg: gmail_v1.Schema$Message): GmailMessage {
     body: extractBody(msg.payload),
     attachments: extractAttachments(msg.payload),
     snippet: msg.snippet || '',
+    labelIds: msg.labelIds || [],
   };
 }
 
@@ -117,31 +125,44 @@ class GmailServiceClass {
   /**
    * Get Gmail API client (lazily initialized)
    */
-  private getGmail(): gmail_v1.Gmail {
+  private async getGmail(): Promise<gmail_v1.Gmail> {
+    // Ensure token is valid before returning client
+    await gmailAuthService.ensureValidToken();
     const auth = gmailAuthService.getOAuth2Client();
     return google.gmail({ version: 'v1', auth });
   }
 
   /**
-   * Get threads from Primary inbox
+   * Get threads from inbox
    * @param maxResults Number of threads to fetch (default 20)
+   * @param pageToken Pagination token
+   * @param q Gmail search query (e.g. 'newer_than:7d')
    */
-  async getThreads(maxResults = 20): Promise<GmailThread[]> {
-    const gmail = this.getGmail();
+  async getThreads(maxResults = 20, pageToken?: string, q?: string): Promise<{ threads: GmailThread[]; nextPageToken?: string }> {
+    const gmail = await this.getGmail();
     const response = await gmail.users.threads.list({
       userId: 'me',
-      q: 'category:primary',
+      labelIds: ['INBOX'],
       maxResults,
+      pageToken,
+      ...(q ? { q } : {}),
     });
 
     const threads = response.data.threads || [];
+
+    if (threads.length === 0) {
+      return { threads: [], nextPageToken: undefined };
+    }
 
     // Fetch full details for each thread
     const fullThreads = await Promise.all(
       threads.map(t => this.getThread(t.id!))
     );
 
-    return fullThreads;
+    return {
+      threads: fullThreads,
+      nextPageToken: response.data.nextPageToken || undefined,
+    };
   }
 
   /**
@@ -149,7 +170,7 @@ class GmailServiceClass {
    * @param threadId Gmail thread ID
    */
   async getThread(threadId: string): Promise<GmailThread> {
-    const gmail = this.getGmail();
+    const gmail = await this.getGmail();
     const response = await gmail.users.threads.get({
       userId: 'me',
       id: threadId,
@@ -170,7 +191,7 @@ class GmailServiceClass {
    * @param attachmentId Attachment ID from GmailAttachment
    */
   async getAttachment(messageId: string, attachmentId: string): Promise<Buffer> {
-    const gmail = this.getGmail();
+    const gmail = await this.getGmail();
     const response = await gmail.users.messages.attachments.get({
       userId: 'me',
       messageId,
@@ -192,7 +213,7 @@ class GmailServiceClass {
     body: string,
     options?: { cc?: string; bcc?: string }
   ): Promise<GmailMessage> {
-    const gmail = this.getGmail();
+    const gmail = await this.getGmail();
 
     // Ensure subject has Re: prefix
     const replySubject = subject.startsWith('Re:') ? subject : `Re: ${subject}`;
@@ -237,7 +258,7 @@ class GmailServiceClass {
     body: string,
     options?: { subject?: string }
   ): Promise<GmailMessage> {
-    const myEmail = gmailAuthService.getUserEmail();
+    const myEmail = await gmailAuthService.fetchUserEmail();
     if (!myEmail) throw new Error('Not authenticated');
 
     const { to, cc } = buildReplyAllRecipients(
@@ -266,7 +287,7 @@ class GmailServiceClass {
     to: string,
     additionalBody?: string
   ): Promise<GmailMessage> {
-    const gmail = this.getGmail();
+    const gmail = await this.getGmail();
 
     // Build forward subject
     const forwardSubject = originalMessage.subject.startsWith('Fwd:')

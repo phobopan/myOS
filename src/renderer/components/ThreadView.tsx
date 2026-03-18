@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
-import type { IMessageConversation, IMessageMessage } from '../types';
+import { memo, useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import type { IMessageConversation, IMessageMessage, Tag } from '../types';
 import { MessageBubble } from './MessageBubble';
 import { Composer } from './Composer';
+import { TagDots } from './TagBadge';
 
 function IMessageIcon() {
   return (
@@ -43,13 +44,21 @@ function getDisplayName(conv: IMessageConversation, maxParticipants = 2): string
 interface ThreadViewProps {
   conversation: IMessageConversation | null;
   onMessageSent?: () => void;  // Callback to refresh conversation list
+  contactTags?: Tag[];  // Tags assigned to this contact
+  claudeAvailable?: boolean;
+  cameFromDigest?: boolean;
+  onBackToDigest?: () => void;
+  onDismissThread?: (id: string, source: 'imessage' | 'gmail' | 'instagram', activityKey: string) => void;
+  isDismissed?: boolean;
 }
 
-export function ThreadView({ conversation, onMessageSent }: ThreadViewProps) {
+export const ThreadView = memo(function ThreadView({ conversation, onMessageSent, contactTags = [], claudeAvailable = false, cameFromDigest, onBackToDigest, onDismissThread, isDismissed = false }: ThreadViewProps) {
   const [messages, setMessages] = useState<IMessageMessage[]>([]);
   const [loading, setLoading] = useState(false);
   const [sendError, setSendError] = useState<string | null>(null);
+  const [highlightGuid, setHighlightGuid] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messageRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   useEffect(() => {
     if (conversation) {
@@ -60,8 +69,17 @@ export function ThreadView({ conversation, onMessageSent }: ThreadViewProps) {
   }, [conversation?.id]);
 
   useEffect(() => {
-    // Scroll to bottom when messages change
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    // Scroll to bottom when messages change - instant, no animation
+    messagesEndRef.current?.scrollIntoView({ behavior: 'instant' });
+  }, [messages]);
+
+  // Build a guid -> message lookup
+  const messageByGuid = useMemo(() => {
+    const map = new Map<string, IMessageMessage>();
+    for (const m of messages) {
+      map.set(m.guid, m);
+    }
+    return map;
   }, [messages]);
 
   const loadMessages = async (chatId: number) => {
@@ -77,8 +95,18 @@ export function ThreadView({ conversation, onMessageSent }: ThreadViewProps) {
   };
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'instant' });
   };
+
+  const handleScrollToMessage = useCallback((guid: string) => {
+    const el = messageRefs.current.get(guid);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      // Brief highlight flash
+      setHighlightGuid(guid);
+      setTimeout(() => setHighlightGuid(null), 1500);
+    }
+  }, []);
 
   const handleSend = async (messageText: string) => {
     if (!conversation) return;
@@ -97,6 +125,7 @@ export function ThreadView({ conversation, onMessageSent }: ThreadViewProps) {
       attachments: [],
       reactions: [],
       isReaction: false,
+      threadOriginatorGuid: null,
     };
 
     // Add to UI immediately
@@ -154,21 +183,57 @@ export function ThreadView({ conversation, onMessageSent }: ThreadViewProps) {
   const canSend = Boolean(conversation.chatIdentifier);
 
   return (
-    <main className="flex-1 h-full flex flex-col p-4">
-      <div className="widget-bubble-large flex-1 flex flex-col overflow-hidden">
+    <main className="flex-1 min-w-0 h-full flex flex-col p-4 overflow-hidden">
+      <div className="widget-bubble-large flex-1 min-h-0 flex flex-col overflow-hidden">
+        {/* Back to Digest */}
+        {cameFromDigest && onBackToDigest && (
+          <button
+            onClick={onBackToDigest}
+            className="flex items-center gap-1.5 px-4 pt-3 pb-1 text-xs text-purple-400 hover:text-purple-300 transition-colors"
+          >
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+            </svg>
+            Back to Digest
+          </button>
+        )}
+
         {/* Header */}
         <div className="flex items-center gap-3 p-4 border-b border-white/10">
           <IMessageIcon />
           <div className="flex-1 min-w-0">
-            <h2 className="font-semibold text-white truncate">
-              {getDisplayName(conversation)}
-            </h2>
+            <div className="flex items-center gap-2">
+              <h2 className="font-semibold text-white truncate">
+                {getDisplayName(conversation)}
+              </h2>
+              {contactTags.length > 0 && (
+                <TagDots tags={contactTags} maxVisible={4} />
+              )}
+            </div>
             {conversation.isGroup && (
               <p className="text-sm text-white/50">
                 Group Chat
               </p>
             )}
           </div>
+          {onDismissThread && conversation && (
+            <button
+              onClick={() => {
+                const activityKey = new Date(conversation.lastMessageDate).toISOString();
+                onDismissThread(String(conversation.id), 'imessage', activityKey);
+              }}
+              className={`flex-shrink-0 flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg transition-colors ${
+                isDismissed
+                  ? 'bg-green-500/20 text-green-400'
+                  : 'bg-white/10 text-white/60 hover:text-white'
+              }`}
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+              {isDismissed ? 'Done' : 'Mark as Done'}
+            </button>
+          )}
         </div>
 
         {/* Messages */}
@@ -187,19 +252,41 @@ export function ThreadView({ conversation, onMessageSent }: ThreadViewProps) {
 
                 {/* Messages for this date */}
                 <div className="space-y-3">
-                  {group.messages.map((message) => (
-                    <MessageBubble
-                      key={message.id}
-                      content={message.text}
-                      isFromMe={message.isFromMe}
-                      senderName={message.senderName}
-                      senderHandle={message.senderHandle}
-                      timestamp={message.date}
-                      attachments={message.attachments}
-                      reactions={message.reactions}
-                      showSender={conversation.isGroup}
-                    />
-                  ))}
+                  {group.messages.map((message) => {
+                    // Resolve reply-to message from threadOriginatorGuid
+                    const originator = message.threadOriginatorGuid
+                      ? messageByGuid.get(message.threadOriginatorGuid)
+                      : undefined;
+                    const replyPreview = originator
+                      ? { text: originator.text, senderName: originator.isFromMe ? 'You' : (originator.senderName || originator.senderHandle || null) }
+                      : undefined;
+
+                    return (
+                      <div
+                        key={message.id}
+                        ref={(el) => {
+                          if (el) messageRefs.current.set(message.guid, el);
+                        }}
+                        className={`transition-colors duration-700 rounded-lg ${
+                          highlightGuid === message.guid ? 'bg-yellow-500/20' : ''
+                        }`}
+                      >
+                        <MessageBubble
+                          content={message.text}
+                          isFromMe={message.isFromMe}
+                          senderName={message.senderName}
+                          senderHandle={message.senderHandle}
+                          timestamp={message.date}
+                          attachments={message.attachments}
+                          reactions={message.reactions}
+                          showSender={conversation.isGroup}
+                          messageGuid={message.guid}
+                          replyToMessage={replyPreview}
+                          onReplyClick={originator ? () => handleScrollToMessage(originator.guid) : undefined}
+                        />
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             ))
@@ -219,8 +306,14 @@ export function ThreadView({ conversation, onMessageSent }: ThreadViewProps) {
           onSend={handleSend}
           disabled={!canSend}
           placeholder={canSend ? 'Type a message...' : 'Unable to send to this conversation'}
+          claudeAvailable={claudeAvailable}
+          messages={messages.slice(-20).map(m => ({
+            sender: m.isFromMe ? 'Me' : (m.senderName || m.senderHandle || 'Them'),
+            text: m.text || '',
+          })).filter(m => m.text)}
+          contactName={getDisplayName(conversation)}
         />
       </div>
     </main>
   );
-}
+});

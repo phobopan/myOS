@@ -5,6 +5,7 @@ import ElectronStore from 'electron-store';
 import * as crypto from 'crypto';
 import * as http from 'http';
 import { GmailTokens } from './gmailTypes';
+import { getGmailCredentials } from './credentialStore';
 
 // OAuth configuration
 const REDIRECT_PORT = 8847;
@@ -45,19 +46,18 @@ class GmailAuthServiceClass {
   }
 
   /**
-   * Create OAuth2Client with credentials from environment
+   * Create OAuth2Client with credentials from credential store (or env fallback)
    */
   private createOAuth2Client(): OAuth2Client {
-    const clientId = process.env.GMAIL_CLIENT_ID;
-    const clientSecret = process.env.GMAIL_CLIENT_SECRET;
+    const creds = getGmailCredentials();
 
-    if (!clientId || !clientSecret) {
+    if (!creds) {
       throw new Error(
-        'Gmail OAuth credentials not configured. Please set GMAIL_CLIENT_ID and GMAIL_CLIENT_SECRET environment variables.'
+        'Gmail OAuth credentials not configured. Please add your Google Cloud credentials in Settings or set GMAIL_CLIENT_ID and GMAIL_CLIENT_SECRET environment variables.'
       );
     }
 
-    return new google.auth.OAuth2(clientId, clientSecret, REDIRECT_URI);
+    return new google.auth.OAuth2(creds.clientId, creds.clientSecret, REDIRECT_URI);
   }
 
   /**
@@ -67,25 +67,105 @@ class GmailAuthServiceClass {
     if (!this.oauth2Client) return;
 
     this.oauth2Client.on('tokens', (tokens) => {
-      console.log('Tokens refreshed, saving to storage');
-      this.saveTokens(tokens as GmailTokens);
+      console.log('[Gmail Auth] Token refresh event received:', {
+        hasAccessToken: !!tokens.access_token,
+        hasRefreshToken: !!tokens.refresh_token,
+      });
+
+      // Merge with existing tokens to preserve refresh_token
+      // (Google only returns refresh_token on first auth)
+      const existingTokens = this.loadTokens();
+      console.log('[Gmail Auth] Existing tokens for merge:', {
+        hasRefreshToken: !!existingTokens?.refresh_token,
+      });
+
+      const mergedTokens = {
+        ...existingTokens,
+        ...tokens,
+        // Keep existing refresh_token if new one isn't provided
+        refresh_token: tokens.refresh_token || existingTokens?.refresh_token,
+      };
+
+      console.log('[Gmail Auth] Merged tokens:', {
+        hasRefreshToken: !!mergedTokens.refresh_token,
+      });
+
+      this.saveTokens(mergedTokens as GmailTokens);
     });
+  }
+
+  /**
+   * Proactively refresh token if it's about to expire
+   * Call this before making API requests
+   */
+  async ensureValidToken(): Promise<void> {
+    if (!this.oauth2Client) {
+      throw new Error('Not authenticated');
+    }
+
+    const tokens = this.oauth2Client.credentials;
+    console.log('[Gmail Auth] ensureValidToken check:', {
+      hasRefreshToken: !!tokens.refresh_token,
+      expiryDate: tokens.expiry_date,
+      expiresIn: tokens.expiry_date ? tokens.expiry_date - Date.now() : 'N/A',
+    });
+
+    if (!tokens.expiry_date) return;
+
+    // Refresh if token expires in less than 5 minutes
+    const expiresIn = tokens.expiry_date - Date.now();
+    if (expiresIn < 5 * 60 * 1000) {
+      console.log('[Gmail Auth] Token expiring soon, refreshing proactively...');
+
+      // Check if we have a refresh token before attempting
+      if (!tokens.refresh_token) {
+        // Try to load from storage
+        const storedTokens = this.loadTokens();
+        if (storedTokens?.refresh_token) {
+          console.log('[Gmail Auth] Found refresh_token in storage, restoring to client');
+          this.oauth2Client.setCredentials({
+            ...tokens,
+            refresh_token: storedTokens.refresh_token,
+          });
+        } else {
+          console.error('[Gmail Auth] No refresh_token available in client or storage');
+          throw new Error('Gmail session expired. Please reconnect in Settings.');
+        }
+      }
+
+      try {
+        const { credentials } = await this.oauth2Client.refreshAccessToken();
+        this.oauth2Client.setCredentials(credentials);
+        // Token refresh handler will save the new tokens
+      } catch (error) {
+        console.error('[Gmail Auth] Failed to refresh token:', error);
+        throw new Error('Gmail session expired. Please reconnect in Settings.');
+      }
+    }
   }
 
   /**
    * Save tokens to encrypted storage
    */
   private saveTokens(tokens: GmailTokens): void {
+    console.log('[Gmail Auth] Saving tokens:', {
+      hasAccessToken: !!tokens.access_token,
+      hasRefreshToken: !!tokens.refresh_token,
+      expiryDate: tokens.expiry_date,
+    });
+
     const tokensJson = JSON.stringify(tokens);
 
     if (safeStorage.isEncryptionAvailable()) {
       const encrypted = safeStorage.encryptString(tokensJson);
       store.set('gmail_tokens', encrypted);
       store.set('gmail_tokens_encrypted', true);
+      console.log('[Gmail Auth] Tokens saved (encrypted)');
     } else {
       // Fallback to unencrypted storage if encryption unavailable
       store.set('gmail_tokens', tokensJson);
       store.set('gmail_tokens_encrypted', false);
+      console.log('[Gmail Auth] Tokens saved (unencrypted)');
     }
   }
 
@@ -94,25 +174,45 @@ class GmailAuthServiceClass {
    */
   private loadTokens(): GmailTokens | null {
     const tokensData = store.get('gmail_tokens');
-    if (!tokensData) return null;
+    if (!tokensData) {
+      console.log('[Gmail Auth] No tokens in storage');
+      return null;
+    }
 
     const isEncrypted = store.get('gmail_tokens_encrypted', false);
 
     try {
       let tokensJson: string;
 
-      if (isEncrypted && Buffer.isBuffer(tokensData)) {
-        tokensJson = safeStorage.decryptString(tokensData);
+      if (isEncrypted) {
+        // Handle Buffer - could be actual Buffer or serialized as {type: "Buffer", data: [...]}
+        let buffer: Buffer;
+        if (Buffer.isBuffer(tokensData)) {
+          buffer = tokensData;
+        } else if (typeof tokensData === 'object' && tokensData !== null && 'type' in tokensData && (tokensData as any).type === 'Buffer' && 'data' in tokensData) {
+          // electron-store serializes Buffer as {type: "Buffer", data: [...]}
+          buffer = Buffer.from((tokensData as any).data);
+        } else {
+          console.error('[Gmail Auth] Invalid encrypted token data format');
+          return null;
+        }
+        tokensJson = safeStorage.decryptString(buffer);
       } else if (typeof tokensData === 'string') {
         tokensJson = tokensData;
       } else {
-        console.error('Invalid token data format');
+        console.error('[Gmail Auth] Invalid token data format');
         return null;
       }
 
-      return JSON.parse(tokensJson) as GmailTokens;
+      const tokens = JSON.parse(tokensJson) as GmailTokens;
+      console.log('[Gmail Auth] Tokens loaded:', {
+        hasAccessToken: !!tokens.access_token,
+        hasRefreshToken: !!tokens.refresh_token,
+        expiryDate: tokens.expiry_date,
+      });
+      return tokens;
     } catch (error) {
-      console.error('Failed to decrypt/parse tokens:', error);
+      console.error('[Gmail Auth] Failed to decrypt/parse tokens:', error);
       return null;
     }
   }
@@ -195,6 +295,16 @@ class GmailAuthServiceClass {
                 codeVerifier,
               });
 
+              console.log('[Gmail Auth] Tokens received:', {
+                hasAccessToken: !!tokens.access_token,
+                hasRefreshToken: !!tokens.refresh_token,
+                expiryDate: tokens.expiry_date,
+              });
+
+              if (!tokens.refresh_token) {
+                console.warn('[Gmail Auth] WARNING: No refresh_token received! User may need to revoke access and re-authenticate.');
+              }
+
               this.oauth2Client!.setCredentials(tokens);
               this.saveTokens(tokens as GmailTokens);
               this.setupTokenRefreshHandler();
@@ -273,9 +383,36 @@ class GmailAuthServiceClass {
 
   /**
    * Check if user is authenticated
+   * Will attempt to restore session from stored tokens if needed
    */
   isAuthenticated(): boolean {
-    return this.oauth2Client !== null && this.loadTokens() !== null;
+    const tokens = this.loadTokens();
+    if (!tokens) return false;
+
+    // If we have tokens but no client, try to restore the session
+    if (!this.oauth2Client) {
+      try {
+        this.oauth2Client = this.createOAuth2Client();
+        this.oauth2Client.setCredentials(tokens);
+        this.setupTokenRefreshHandler();
+        console.log('[Gmail Auth] Session restored from stored tokens');
+      } catch (error) {
+        console.error('[Gmail Auth] Failed to restore session:', error);
+        return false;
+      }
+    } else {
+      // Ensure the client has the refresh_token from storage
+      const clientTokens = this.oauth2Client.credentials;
+      if (!clientTokens.refresh_token && tokens.refresh_token) {
+        console.log('[Gmail Auth] Restoring refresh_token from storage to client');
+        this.oauth2Client.setCredentials({
+          ...clientTokens,
+          refresh_token: tokens.refresh_token,
+        });
+      }
+    }
+
+    return true;
   }
 
   /**
@@ -283,6 +420,30 @@ class GmailAuthServiceClass {
    */
   getUserEmail(): string | null {
     return store.get('gmail_user_email') ?? null;
+  }
+
+  /**
+   * Get user email, fetching from Gmail API if not cached
+   */
+  async fetchUserEmail(): Promise<string | null> {
+    const cached = this.getUserEmail();
+    if (cached) return cached;
+
+    if (!this.isAuthenticated()) return null;
+
+    try {
+      await this.ensureValidToken();
+      const gmail = google.gmail({ version: 'v1', auth: this.oauth2Client! });
+      const profile = await gmail.users.getProfile({ userId: 'me' });
+      const email = profile.data.emailAddress;
+      if (email) {
+        store.set('gmail_user_email', email);
+        return email;
+      }
+    } catch (error) {
+      console.error('[Gmail Auth] Failed to fetch user email:', error);
+    }
+    return null;
   }
 
   /**

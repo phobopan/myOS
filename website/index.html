@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>myOS - Your Unified Inbox</title>
+  <style>
+    :root {
+      --bg: #0a0a0f;
+      --surface: rgba(255, 255, 255, 0.05);
+      --border: rgba(255, 255, 255, 0.1);
+      --text: #e5e5e5;
+      --text-muted: rgba(255, 255, 255, 0.5);
+      --accent: #3b82f6;
+      --accent-hover: #2563eb;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      -webkit-font-smoothing: antialiased;
+      line-height: 1.6;
+    }
+
+    .container {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Hero */
+    .hero {
+      text-align: center;
+      padding: 120px 0 80px;
+    }
+
+    .hero h1 {
+      font-size: 3.5rem;
+      font-weight: 700;
+      margin-bottom: 16px;
+      letter-spacing: -0.02em;
+    }
+
+    .hero h1 span {
+      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .hero p {
+      font-size: 1.25rem;
+      color: var(--text-muted);
+      max-width: 520px;
+      margin: 0 auto 40px;
+    }
+
+    .download-buttons {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 28px;
+      border-radius: 12px;
+      font-size: 1rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--accent-hover);
+      transform: translateY(-1px);
+    }
+
+    .btn-secondary {
+      background: var(--surface);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .btn svg {
+      width: 20px;
+      height: 20px;
+    }
+
+    /* Screenshot placeholder */
+    .screenshot {
+      margin: 60px auto;
+      max-width: 800px;
+      aspect-ratio: 16/10;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+
+    /* Features */
+    .features {
+      padding: 80px 0;
+    }
+
+    .features h2 {
+      text-align: center;
+      font-size: 2rem;
+      margin-bottom: 48px;
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 24px;
+    }
+
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+    }
+
+    .feature-card .icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      font-size: 1.25rem;
+    }
+
+    .feature-card h3 {
+      font-size: 1.1rem;
+      margin-bottom: 8px;
+    }
+
+    .feature-card p {
+      font-size: 0.875rem;
+      color: var(--text-muted);
+      line-height: 1.5;
+    }
+
+    /* Platforms */
+    .platforms {
+      text-align: center;
+      padding: 60px 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .platforms h2 {
+      font-size: 1.5rem;
+      margin-bottom: 12px;
+    }
+
+    .platforms p {
+      color: var(--text-muted);
+      margin-bottom: 32px;
+    }
+
+    .platform-icons {
+      display: flex;
+      gap: 40px;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .platform-icons span {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 1rem;
+      color: var(--text-muted);
+    }
+
+    .platform-icons .dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    /* Install guide */
+    .install {
+      padding: 60px 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .install h2 {
+      text-align: center;
+      font-size: 1.5rem;
+      margin-bottom: 24px;
+    }
+
+    .install-steps {
+      max-width: 500px;
+      margin: 0 auto;
+    }
+
+    .install-steps li {
+      list-style: none;
+      padding: 12px 0;
+      color: var(--text-muted);
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+
+    .install-steps .step-num {
+      background: var(--accent);
+      color: white;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 700;
+      flex-shrink: 0;
+    }
+
+    .install-steps code {
+      background: var(--surface);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.85em;
+    }
+
+    /* CTA */
+    .cta {
+      text-align: center;
+      padding: 80px 0;
+      border-top: 1px solid var(--border);
+    }
+
+    .cta h2 {
+      font-size: 2rem;
+      margin-bottom: 16px;
+    }
+
+    .cta p {
+      color: var(--text-muted);
+      margin-bottom: 32px;
+    }
+
+    /* Footer */
+    footer {
+      text-align: center;
+      padding: 40px 0;
+      border-top: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+
+    footer a {
+      color: var(--accent);
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+
+    @media (max-width: 640px) {
+      .hero h1 { font-size: 2.5rem; }
+      .hero { padding: 80px 0 40px; }
+      .feature-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Hero -->
+    <section class="hero">
+      <h1>Meet <span>myOS</span></h1>
+      <p>A unified inbox for iMessage, Gmail, and Instagram. AI-powered digest. Beautiful glassmorphism UI. All on your Mac.</p>
+      <div class="download-buttons">
+        <a href="#" class="btn btn-primary" id="download-arm64">
+          <svg fill="currentColor" viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+          Download for Mac (Apple Silicon)
+        </a>
+        <a href="#" class="btn btn-secondary" id="download-x64">
+          <svg fill="currentColor" viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+          Download for Mac (Intel)
+        </a>
+      </div>
+    </section>
+
+    <!-- Screenshot -->
+    <div class="screenshot">
+      Replace with app screenshot
+    </div>
+
+    <!-- Features -->
+    <section class="features">
+      <h2>Everything in one place</h2>
+      <div class="feature-grid">
+        <div class="feature-card">
+          <div class="icon" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6;">&#9993;</div>
+          <h3>Unified Inbox</h3>
+          <p>iMessage, Gmail, and Instagram conversations in a single, sorted timeline.</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon" style="background: rgba(139, 92, 246, 0.15); color: #8b5cf6;">&#9733;</div>
+          <h3>AI Digest</h3>
+          <p>Get an AI-generated summary of what needs your attention. Daily, hourly, or weekly.</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">&#9776;</div>
+          <h3>Smart Organization</h3>
+          <p>Tags, priority tiers, clusters, and filters to stay on top of what matters.</p>
+        </div>
+        <div class="feature-card">
+          <div class="icon" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b;">&#9881;</div>
+          <h3>Multi-Provider AI</h3>
+          <p>Choose Claude, OpenAI, or Gemini. Bring your own API key or use Claude CLI.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Platforms -->
+    <section class="platforms">
+      <h2>Works with your messaging platforms</h2>
+      <p>Connect what you already use.</p>
+      <div class="platform-icons">
+        <span><span class="dot" style="background: #34d058;"></span> iMessage</span>
+        <span><span class="dot" style="background: #ea4335;"></span> Gmail</span>
+        <span><span class="dot" style="background: #e4405f;"></span> Instagram</span>
+      </div>
+    </section>
+
+    <!-- Install -->
+    <section class="install">
+      <h2>How to install</h2>
+      <ul class="install-steps">
+        <li>
+          <span class="step-num">1</span>
+          <span>Download the DMG for your Mac (Apple Silicon or Intel).</span>
+        </li>
+        <li>
+          <span class="step-num">2</span>
+          <span>Open the DMG and drag myOS to your Applications folder.</span>
+        </li>
+        <li>
+          <span class="step-num">3</span>
+          <span>Right-click the app and select <code>Open</code> (required for unsigned apps).</span>
+        </li>
+        <li>
+          <span class="step-num">4</span>
+          <span>Grant Full Disk Access when prompted to enable iMessage reading.</span>
+        </li>
+      </ul>
+    </section>
+
+    <!-- CTA -->
+    <section class="cta">
+      <h2>Ready to simplify your inbox?</h2>
+      <p>Download myOS and take control of your messages.</p>
+      <a href="#" class="btn btn-primary" id="download-cta">Download for Mac</a>
+    </section>
+  </div>
+
+  <footer>
+    <div class="container">
+      <p>
+        myOS is open source.
+        <a href="https://github.com/phoebeOS/myos" target="_blank" rel="noopener">View on GitHub</a>
+      </p>
+    </div>
+  </footer>
+
+  <script>
+    // Update download links when GitHub repo/version are configured
+    // Replace these with your actual GitHub release URLs
+    const REPO = 'phoebeOS/myos';
+    const VERSION = 'latest';
+
+    const arm64Url = `https://github.com/${REPO}/releases/${VERSION}/download/myOS-${VERSION}-arm64.dmg`;
+    const x64Url = `https://github.com/${REPO}/releases/${VERSION}/download/myOS-${VERSION}-x64.dmg`;
+
+    document.getElementById('download-arm64').href = `https://github.com/${REPO}/releases/latest`;
+    document.getElementById('download-x64').href = `https://github.com/${REPO}/releases/latest`;
+    document.getElementById('download-cta').href = `https://github.com/${REPO}/releases/latest`;
+  </script>
+</body>
+</html>

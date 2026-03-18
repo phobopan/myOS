@@ -1,18 +1,28 @@
 import { useState, useRef, useEffect } from 'react';
 import type { InstagramWindowStatus } from '../types';
 
+interface DraftMessage {
+  sender: string;
+  text: string;
+}
+
 interface InstagramComposerProps {
-  recipientId: string;
+  threadId: string;
   windowStatus: InstagramWindowStatus;
-  onSend: (recipientId: string, text: string) => Promise<void>;
+  onSend: (threadId: string, text: string) => Promise<void>;
+  claudeAvailable?: boolean;
+  messages?: DraftMessage[];
+  contactName?: string;
 }
 
 const CHAR_LIMIT = 1000;
 
-export function InstagramComposer({ recipientId, windowStatus, onSend }: InstagramComposerProps) {
+export function InstagramComposer({ threadId, windowStatus, onSend, claudeAvailable = false, messages = [], contactName }: InstagramComposerProps) {
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [drafting, setDrafting] = useState(false);
+  const [hasDraft, setHasDraft] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const isExpired = !windowStatus.isOpen || windowStatus.urgency === 'expired';
@@ -35,8 +45,9 @@ export function InstagramComposer({ recipientId, windowStatus, onSend }: Instagr
     setError(null);
 
     try {
-      await onSend(recipientId, text.trim());
+      await onSend(threadId, text.trim());
       setText('');
+      setHasDraft(false);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : 'Failed to send message';
       setError(message);
@@ -45,13 +56,54 @@ export function InstagramComposer({ recipientId, windowStatus, onSend }: Instagr
     }
   }
 
-  function handleKeyDown(e: React.KeyboardEvent) {
-    // Cmd/Ctrl + Enter to send
-    if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
+    if (e.key === 'Enter') {
+      if (e.metaKey || e.ctrlKey) {
+        // Cmd/Ctrl + Enter for new line
+        e.preventDefault();
+        const textarea = e.currentTarget;
+        const start = textarea.selectionStart;
+        const end = textarea.selectionEnd;
+        const newText = text.slice(0, start) + '\n' + text.slice(end);
+        setText(newText);
+        // Set cursor position after the newline
+        setTimeout(() => {
+          textarea.selectionStart = textarea.selectionEnd = start + 1;
+        }, 0);
+        return;
+      }
+      // Enter to send
       e.preventDefault();
       handleSend();
     }
   }
+
+  const handleGenerateDraft = async () => {
+    if (drafting || sending || messages.length === 0) return;
+
+    setDrafting(true);
+    setText('');
+    const cleanup = window.electron.claude.onDraftChunk((chunk) => {
+      setText(prev => prev + chunk);
+    });
+    try {
+      await window.electron.claude.generateDraftStream(
+        'instagram',
+        messages,
+        { contactName }
+      );
+      setText(prev => prev.trim());
+      setHasDraft(true);
+      textareaRef.current?.focus();
+    } catch (err) {
+      console.error('Failed to generate draft:', err);
+    } finally {
+      cleanup();
+      setDrafting(false);
+    }
+  };
+
+  const showDraftButton = claudeAvailable && messages.length > 0 && !isExpired;
 
   // Show "Open in Instagram" for expired windows
   if (isExpired) {
@@ -63,7 +115,7 @@ export function InstagramComposer({ recipientId, windowStatus, onSend }: Instagr
             <p className="text-xs text-white/30 mt-1">You can only reply within 24 hours of their last message</p>
           </div>
           <button
-            onClick={() => window.electron.shell.openPath('https://instagram.com/direct/inbox')}
+            onClick={() => window.electron.shell.openExternal('https://www.instagram.com/direct/inbox/')}
             className="px-4 py-2 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm font-medium rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
@@ -91,9 +143,11 @@ export function InstagramComposer({ recipientId, windowStatus, onSend }: Instagr
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Type a message..."
-            disabled={sending}
-            className="w-full bg-white/10 rounded-lg px-3 py-2 pr-16 text-white placeholder-white/40 resize-none min-h-[40px] max-h-[120px] focus:outline-none focus:ring-1 focus:ring-white/30 disabled:opacity-50"
+            placeholder={drafting ? 'AI is drafting...' : 'Type a message...'}
+            disabled={sending || drafting}
+            className={`w-full bg-white/10 rounded-lg px-3 py-2 pr-16 text-white placeholder-white/40 resize-none min-h-[40px] max-h-[120px] focus:outline-none focus:ring-1 disabled:opacity-50 ${
+              drafting ? 'ring-purple-500/50 animate-pulse' : 'focus:ring-white/30'
+            }`}
             rows={1}
           />
           {/* Character counter */}
@@ -110,6 +164,26 @@ export function InstagramComposer({ recipientId, windowStatus, onSend }: Instagr
           </span>
         </div>
 
+        {showDraftButton && (
+          <button
+            onClick={handleGenerateDraft}
+            disabled={drafting || sending}
+            title={hasDraft ? 'Regenerate draft' : 'AI Draft'}
+            className="bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed text-white px-3 py-2 rounded-lg transition-colors flex items-center justify-center"
+          >
+            {drafting ? (
+              <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : hasDraft ? (
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+            ) : (
+              <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 2L9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2z" />
+              </svg>
+            )}
+          </button>
+        )}
         <button
           onClick={handleSend}
           disabled={!canSend}
@@ -129,7 +203,7 @@ export function InstagramComposer({ recipientId, windowStatus, onSend }: Instagr
       </div>
 
       <p className="text-xs text-white/30 mt-2">
-        Press Cmd+Enter to send
+        Enter to send, Cmd+Enter for new line
       </p>
     </div>
   );

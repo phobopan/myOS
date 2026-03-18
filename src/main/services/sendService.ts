@@ -20,21 +20,51 @@ export async function sendMessage(recipient: string, message: string): Promise<S
     .replace(/"/g, '\\"')
     .replace(/\n/g, '\\n');
 
-  const script = `
+  const escapedRecipient = recipient
+    .replace(/\\/g, '\\\\')
+    .replace(/"/g, '\\"');
+
+  // Try method 1: Using buddy
+  const buddyScript = `
     tell application "Messages"
       set targetService to 1st service whose service type = iMessage
-      set targetBuddy to buddy "${recipient}" of targetService
+      set targetBuddy to buddy "${escapedRecipient}" of targetService
       send "${escapedMessage}" to targetBuddy
     end tell
   `;
 
   try {
-    await execFileAsync('osascript', ['-e', script]);
+    await execFileAsync('osascript', ['-e', buddyScript]);
     return { success: true };
-  } catch (err) {
-    const error = err instanceof Error ? err.message : 'Unknown error';
-    console.error('Failed to send message:', error);
-    return { success: false, error };
+  } catch {
+    // Try method 2: Using participant in a chat
+    const participantScript = `
+      tell application "Messages"
+        set targetChat to a reference to 1st chat whose participants contains participant "${escapedRecipient}"
+        send "${escapedMessage}" to targetChat
+      end tell
+    `;
+
+    try {
+      await execFileAsync('osascript', ['-e', participantScript]);
+      return { success: true };
+    } catch {
+      // Try method 3: Create new conversation
+      const newChatScript = `
+        tell application "Messages"
+          send "${escapedMessage}" to participant "${escapedRecipient}"
+        end tell
+      `;
+
+      try {
+        await execFileAsync('osascript', ['-e', newChatScript]);
+        return { success: true };
+      } catch (err) {
+        const error = err instanceof Error ? err.message : 'Unknown error';
+        console.error('Failed to send message:', error);
+        return { success: false, error };
+      }
+    }
   }
 }
 
@@ -95,19 +125,25 @@ export async function sendToChat(chatIdentifier: string, message: string): Promi
   }
 
   // For group chats, we need to use a different approach
-  // AppleScript can send to a chat by finding it through iteration
   const escapedMessage = message
     .replace(/\\/g, '\\\\')
     .replace(/"/g, '\\"')
     .replace(/\n/g, '\\n');
 
-  // Try using "text chat id" format which some macOS versions support
   const escapedChatId = chatIdentifier
     .replace(/\\/g, '\\\\')
     .replace(/"/g, '\\"');
 
-  // First try: Use the full chat identifier as text chat id
-  const script = `
+  // Extract just the chat ID part (e.g., "chat123456789" from "iMessage;+;chat123456789")
+  const chatIdMatch = chatIdentifier.match(/chat\d+/);
+  const shortChatId = chatIdMatch ? chatIdMatch[0] : '';
+
+  // Also extract any numeric ID
+  const numericIdMatch = chatIdentifier.match(/\d{10,}/);
+  const numericId = numericIdMatch ? numericIdMatch[0] : '';
+
+  // Method 1: Try using text chat id with full identifier
+  const script1 = `
     tell application "Messages"
       set targetChat to text chat id "${escapedChatId}"
       send "${escapedMessage}" to targetChat
@@ -115,31 +151,75 @@ export async function sendToChat(chatIdentifier: string, message: string): Promi
   `;
 
   try {
-    await execFileAsync('osascript', ['-e', script]);
+    await execFileAsync('osascript', ['-e', script1]);
     return { success: true };
-  } catch (firstErr) {
-    // Second try: Find the chat by iterating through all chats
-    const fallbackScript = `
-      tell application "Messages"
-        set allChats to every chat
-        repeat with aChat in allChats
-          try
-            if id of aChat is "${escapedChatId}" then
+  } catch {
+    // Method 2: Find chat by iterating and checking if id contains chat number
+    if (shortChatId) {
+      const script2 = `
+        tell application "Messages"
+          repeat with aChat in chats
+            set chatId to id of aChat
+            if chatId contains "${shortChatId}" then
               send "${escapedMessage}" to aChat
               return "sent"
             end if
-          end try
+          end repeat
+          error "Chat not found"
+        end tell
+      `;
+
+      try {
+        await execFileAsync('osascript', ['-e', script2]);
+        return { success: true };
+      } catch {
+        // Continue to next method
+      }
+    }
+
+    // Method 3: Try matching by numeric ID portion
+    if (numericId) {
+      const script3 = `
+        tell application "Messages"
+          repeat with aChat in chats
+            set chatId to id of aChat as string
+            if chatId contains "${numericId}" then
+              send "${escapedMessage}" to aChat
+              return "sent"
+            end if
+          end repeat
+          error "Chat not found"
+        end tell
+      `;
+
+      try {
+        await execFileAsync('osascript', ['-e', script3]);
+        return { success: true };
+      } catch {
+        // Continue to next method
+      }
+    }
+
+    // Method 4: Try exact match or contains
+    const script4 = `
+      tell application "Messages"
+        repeat with aChat in chats
+          set chatId to id of aChat
+          if chatId is "${escapedChatId}" or chatId contains "${escapedChatId}" then
+            send "${escapedMessage}" to aChat
+            return "sent"
+          end if
         end repeat
         error "Chat not found"
       end tell
     `;
 
     try {
-      await execFileAsync('osascript', ['-e', fallbackScript]);
+      await execFileAsync('osascript', ['-e', script4]);
       return { success: true };
-    } catch (secondErr) {
-      const error = secondErr instanceof Error ? secondErr.message : 'Unknown error';
-      console.error('Failed to send to chat:', error);
+    } catch (err) {
+      const error = err instanceof Error ? err.message : 'Unknown error';
+      console.error('Failed to send to chat. Identifier:', chatIdentifier, 'Error:', error);
       return { success: false, error: `Could not find chat. Try opening this conversation in Messages.app first.` };
     }
   }

@@ -42,6 +42,7 @@ export interface GmailMessage {
   };
   attachments: GmailAttachment[];
   snippet: string; // Preview text
+  labelIds: string[]; // Gmail labels (e.g. 'SENT', 'INBOX')
 }
 
 /**
@@ -53,6 +54,7 @@ export interface GmailAttachment {
   mimeType: string;
   size: number;
   isInline: boolean;
+  contentId?: string; // Content-ID header for CID inline image references
 }
 
 /**

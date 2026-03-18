@@ -7,28 +7,47 @@ interface CountdownBadgeProps {
 }
 
 export function CountdownBadge({ windowStatus, className = '', compact = false }: CountdownBadgeProps) {
-  const { isOpen, hoursRemaining, minutesRemaining, urgency } = windowStatus;
+  // hoursRemaining and minutesRemaining now represent time LEFT to respond
+  const { hoursRemaining, minutesRemaining, isOpen } = windowStatus;
 
-  if (!isOpen || urgency === 'expired') {
-    return (
-      <span className={`text-xs px-2 py-0.5 rounded bg-gray-500/20 text-gray-400 flex-shrink-0 ${className}`}>
-        Expired
-      </span>
-    );
+  // Color based on how much time is left
+  let bgColor: string;
+  let textColor: string;
+
+  if (!isOpen) {
+    // Window expired
+    bgColor = 'bg-red-500/20';
+    textColor = 'text-red-400';
+  } else if (hoursRemaining < 4) {
+    // Less than 4 hours - urgent
+    bgColor = 'bg-orange-500/20';
+    textColor = 'text-orange-400';
+  } else if (hoursRemaining < 12) {
+    // Less than 12 hours - warning
+    bgColor = 'bg-yellow-500/20';
+    textColor = 'text-yellow-400';
+  } else {
+    // Plenty of time
+    bgColor = 'bg-green-500/20';
+    textColor = 'text-green-400';
   }
 
-  // Color based on urgency
-  const bgColor = urgency === 'warning' ? 'bg-orange-500/20' : 'bg-green-500/20';
-  const textColor = urgency === 'warning' ? 'text-orange-400' : 'text-green-400';
-
-  // Format time remaining - compact mode shows shorter format
+  // Format time left
   let timeText: string;
-  if (compact) {
-    timeText = hoursRemaining > 0 ? `${hoursRemaining}h` : `${minutesRemaining}m`;
+  if (!isOpen) {
+    timeText = 'expired';
+  } else if (compact) {
+    // Sidebar: just show hours (underestimate - floor)
+    timeText = `${hoursRemaining}h`;
   } else {
-    timeText = hoursRemaining > 0
-      ? `${hoursRemaining}h ${minutesRemaining}m left`
-      : `${minutesRemaining}m left`;
+    // Thread view: show hours and minutes
+    if (hoursRemaining === 0) {
+      timeText = `${minutesRemaining} min left`;
+    } else if (minutesRemaining === 0) {
+      timeText = `${hoursRemaining} hr${hoursRemaining !== 1 ? 's' : ''} left`;
+    } else {
+      timeText = `${hoursRemaining} hr${hoursRemaining !== 1 ? 's' : ''} ${minutesRemaining} min left`;
+    }
   }
 
   return (

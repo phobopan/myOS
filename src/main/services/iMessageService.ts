@@ -25,113 +25,52 @@ export function toAppleTime(date: Date): number {
 }
 
 /**
- * Parse attributedBody blob to extract message text
- * attributedBody is a binary plist (NSKeyedArchiver format) containing NSAttributedString
- * The actual text is stored as a UTF-8 or UTF-16 string within the archive
+ * Parse attributedBody blob to extract message text.
+ *
+ * attributedBody uses Apple's typedstream format (NOT standard bplist).
+ * The structure is:
+ *   [header...] NSString [5-byte preamble] [length field] [UTF-8 text]
+ *
+ * Length field encoding:
+ *   - If first byte != 0x81: single byte is the length (max 127)
+ *   - If first byte == 0x81: next 2 bytes are little-endian length (max 65535)
  */
 export function parseAttributedBody(buffer: Buffer | null): string | null {
   if (!buffer || buffer.length === 0) return null;
 
   try {
-    // The attributedBody is an NSKeyedArchiver binary plist
-    // The message text is stored after specific markers
+    // Find the NSString marker
+    const marker = Buffer.from('NSString');
+    const markerIndex = buffer.indexOf(marker);
+    if (markerIndex === -1) return null;
 
-    // Method 1: Look for the NSString content using the +marker pattern
-    // In NSKeyedArchiver, strings are often preceded by their class info
-    // Format is typically: [length byte][string content]
+    // Skip marker (8 bytes) + 5-byte preamble (0x01 0x94 0x84 0x01 0x2B or similar)
+    const contentStart = markerIndex + marker.length + 5;
+    if (contentStart >= buffer.length) return null;
 
-    // Find all potential string positions by looking for length-prefixed UTF-8
-    const candidates: string[] = [];
+    let length: number;
+    let textStart: number;
 
-    for (let i = 0; i < buffer.length - 2; i++) {
-      const possibleLength = buffer[i];
-
-      // Check if this could be a length byte followed by valid UTF-8
-      if (possibleLength > 0 && possibleLength < 255 && i + possibleLength + 1 <= buffer.length) {
-        // Try to read the next 'possibleLength' bytes as UTF-8
-        const slice = buffer.slice(i + 1, i + 1 + possibleLength);
-
-        // Check if all bytes are printable UTF-8
-        let isValid = true;
-        for (const byte of slice) {
-          // Allow printable ASCII, common UTF-8 continuation bytes, and emoji ranges
-          if (byte < 0x20 && byte !== 0x0a && byte !== 0x0d) { // Allow newlines
-            if (byte < 0x80 || (byte >= 0x80 && byte < 0xC0)) {
-              // Could be UTF-8 continuation - check context
-              continue;
-            }
-            isValid = false;
-            break;
-          }
-        }
-
-        if (isValid && possibleLength >= 1) {
-          try {
-            const text = slice.toString('utf8');
-            // Filter out system strings and binary garbage
-            if (
-              text.length >= 1 &&
-              !text.includes('NSAttributedString') &&
-              !text.includes('NSMutableString') &&
-              !text.includes('NSObject') &&
-              !text.includes('NSArray') &&
-              !text.includes('NSDictionary') &&
-              !text.includes('streamtyped') &&
-              !text.includes('NSValue') &&
-              !text.includes('NSNumber') &&
-              !text.includes('$class') &&
-              !text.includes('NS.keys') &&
-              !text.includes('NS.objects') &&
-              !text.startsWith('+') &&
-              !/^[\x00-\x1f]+$/.test(text) && // Not just control chars
-              !/^\s+$/.test(text) // Not just whitespace
-            ) {
-              // Check if it looks like actual message content (has word characters)
-              if (/[\w\u00C0-\u024F\u4E00-\u9FFF\u{1F300}-\u{1F9FF}]/u.test(text)) {
-                candidates.push(text.trim());
-              }
-            }
-          } catch {
-            // Invalid UTF-8, skip
-          }
-        }
-      }
+    // Check length encoding
+    if (buffer[contentStart] === 0x81) {
+      // 3-byte length: 0x81 followed by 2 bytes little-endian
+      if (contentStart + 3 > buffer.length) return null;
+      length = buffer.readUInt16LE(contentStart + 1);
+      textStart = contentStart + 3;
+    } else {
+      // 1-byte length
+      length = buffer[contentStart];
+      textStart = contentStart + 1;
     }
 
-    // Return the longest valid candidate (usually the message content)
-    if (candidates.length > 0) {
-      // Sort by length descending and return the longest that looks like a message
-      candidates.sort((a, b) => b.length - a.length);
-      for (const candidate of candidates) {
-        // Skip very short strings that are likely metadata
-        if (candidate.length >= 1) {
-          return candidate;
-        }
-      }
-    }
+    // Validate bounds
+    if (length <= 0 || textStart + length > buffer.length) return null;
 
-    // Method 2: Fallback - scan for UTF-8 sequences directly
-    // Look for sequences of printable characters
-    const utf8Str = buffer.toString('utf8');
-    const cleanMatches = utf8Str.match(/[\x20-\x7E\u00A0-\u024F\u4E00-\u9FFF\u{1F300}-\u{1F9FF}]{2,}/gu);
+    // Extract and decode UTF-8 text
+    const text = buffer.subarray(textStart, textStart + length).toString('utf-8');
 
-    if (cleanMatches) {
-      for (const match of cleanMatches) {
-        if (
-          !match.includes('NS') &&
-          !match.includes('stream') &&
-          !match.includes('$class') &&
-          !/^[+\-=]+$/.test(match)
-        ) {
-          const cleaned = match.trim();
-          if (cleaned.length > 0) {
-            return cleaned;
-          }
-        }
-      }
-    }
-
-    return null;
+    // Return trimmed text (but preserve the actual content)
+    return text.trim() || null;
   } catch {
     return null;
   }
@@ -149,11 +88,13 @@ class IMessageService {
   /**
    * Get or initialize the database connection
    * Opens in readonly mode for safety
+   * Reopens on each call to ensure we see latest WAL changes from Messages.app
    */
   private getDb(): Database.Database {
-    if (!this.db) {
-      this.db = new Database(this.dbPath, { readonly: true });
+    if (this.db) {
+      try { this.db.close(); } catch { /* ignore */ }
     }
+    this.db = new Database(this.dbPath, { readonly: true });
     return this.db;
   }
 
@@ -169,43 +110,123 @@ class IMessageService {
   }
 
   /**
-   * Get conversations ordered by most recent message
+   * Get conversations awaiting reply (where last message is not from me)
    * Returns chats with their last message for preview
    */
   getConversations(limit = 50): DBConversation[] {
     const db = this.getDb();
+    // Deduplicate by chat_identifier: when the same phone number has both an
+    // iMessage and SMS chat row, keep only the one with the most recent message.
+    // Without this, a stale SMS chat can show as "unanswered" even though the
+    // user replied via the iMessage chat.
     const stmt = db.prepare(`
-      SELECT
-        c.ROWID as id,
-        c.guid,
-        c.chat_identifier,
-        c.display_name,
-        c.style,
-        m.text as last_message,
-        m.attributedBody as last_message_attributed_body,
-        m.is_from_me,
-        m.date as last_message_date,
-        h.id as handle_id
-      FROM chat c
-      LEFT JOIN chat_message_join cmj ON c.ROWID = cmj.chat_id
-      LEFT JOIN message m ON cmj.message_id = m.ROWID
-      LEFT JOIN handle h ON m.handle_id = h.ROWID
-      WHERE m.ROWID = (
-        SELECT MAX(m2.ROWID)
-        FROM message m2
-        JOIN chat_message_join cmj2 ON m2.ROWID = cmj2.message_id
-        WHERE cmj2.chat_id = c.ROWID
+      SELECT * FROM (
+        SELECT
+          c.ROWID as id,
+          c.guid,
+          c.chat_identifier,
+          c.display_name,
+          c.style,
+          m.text as last_message,
+          m.attributedBody as last_message_attributed_body,
+          m.is_from_me,
+          m.date as last_message_date,
+          h.id as handle_id,
+          m.cache_has_attachments,
+          (SELECT a.mime_type FROM attachment a
+           JOIN message_attachment_join maj ON a.ROWID = maj.attachment_id
+           WHERE maj.message_id = m.ROWID
+           LIMIT 1) as attachment_mime_type,
+          ROW_NUMBER() OVER (
+            PARTITION BY c.chat_identifier
+            ORDER BY m.date DESC
+          ) as rn
+        FROM chat c
+        LEFT JOIN chat_message_join cmj ON c.ROWID = cmj.chat_id
+        LEFT JOIN message m ON cmj.message_id = m.ROWID
+        LEFT JOIN handle h ON m.handle_id = h.ROWID
+        WHERE m.ROWID = (
+          SELECT m2.ROWID
+          FROM message m2
+          JOIN chat_message_join cmj2 ON m2.ROWID = cmj2.message_id
+          WHERE cmj2.chat_id = c.ROWID
+            AND (m2.associated_message_type IS NULL OR m2.associated_message_type = 0)
+          ORDER BY m2.date DESC
+          LIMIT 1
+        )
       )
-      ORDER BY m.date DESC
+      WHERE rn = 1
+      ORDER BY last_message_date DESC
       LIMIT ?
     `);
     return stmt.all(limit) as DBConversation[];
   }
 
   /**
+   * Get specific conversations by their ROWIDs (no is_from_me filter)
+   * Used to load pinned conversations that may not appear in the recent list.
+   * Expands each ROWID to its chat_identifier, then deduplicates so that if
+   * a pinned chat has both iMessage and SMS rows, we return the freshest one.
+   */
+  getConversationsByIds(ids: number[]): DBConversation[] {
+    if (ids.length === 0) return [];
+    const db = this.getDb();
+    const placeholders = ids.map(() => '?').join(',');
+    // Step 1: resolve the requested ROWIDs to their chat_identifiers
+    // Step 2: find ALL chat rows with those chat_identifiers (catches iMessage/SMS siblings)
+    // Step 3: deduplicate by chat_identifier, keeping the one with the most recent message
+    const stmt = db.prepare(`
+      SELECT * FROM (
+        SELECT
+          c.ROWID as id,
+          c.guid,
+          c.chat_identifier,
+          c.display_name,
+          c.style,
+          m.text as last_message,
+          m.attributedBody as last_message_attributed_body,
+          m.is_from_me,
+          m.date as last_message_date,
+          h.id as handle_id,
+          m.cache_has_attachments,
+          (SELECT a.mime_type FROM attachment a
+           JOIN message_attachment_join maj ON a.ROWID = maj.attachment_id
+           WHERE maj.message_id = m.ROWID
+           LIMIT 1) as attachment_mime_type,
+          ROW_NUMBER() OVER (
+            PARTITION BY c.chat_identifier
+            ORDER BY m.date DESC
+          ) as rn
+        FROM chat c
+        LEFT JOIN chat_message_join cmj ON c.ROWID = cmj.chat_id
+        LEFT JOIN message m ON cmj.message_id = m.ROWID
+        LEFT JOIN handle h ON m.handle_id = h.ROWID
+        WHERE c.chat_identifier IN (
+          SELECT chat_identifier FROM chat WHERE ROWID IN (${placeholders})
+        )
+        AND m.ROWID = (
+          SELECT m2.ROWID
+          FROM message m2
+          JOIN chat_message_join cmj2 ON m2.ROWID = cmj2.message_id
+          WHERE cmj2.chat_id = c.ROWID
+            AND (m2.associated_message_type IS NULL OR m2.associated_message_type = 0)
+          ORDER BY m2.date DESC
+          LIMIT 1
+        )
+      )
+      WHERE rn = 1
+      ORDER BY last_message_date DESC
+    `);
+    return stmt.all(...ids) as DBConversation[];
+  }
+
+  /**
    * Get messages for a specific chat
    * Ordered by date descending (most recent first)
-   * Includes reactions as separate message rows
+   * Includes reactions as separate message rows.
+   * Merges messages from all chat rows sharing the same chat_identifier
+   * (e.g. iMessage + SMS for the same phone number) so the thread view
+   * shows the complete conversation.
    */
   getMessages(chatId: number, limit = 50): DBMessage[] {
     const db = this.getDb();
@@ -220,11 +241,15 @@ class IMessageService {
         m.cache_has_attachments,
         m.associated_message_guid,
         m.associated_message_type,
-        h.id as sender_handle
+        h.id as sender_handle,
+        m.thread_originator_guid
       FROM message m
       JOIN chat_message_join cmj ON m.ROWID = cmj.message_id
       LEFT JOIN handle h ON m.handle_id = h.ROWID
-      WHERE cmj.chat_id = ?
+      WHERE cmj.chat_id IN (
+        SELECT c2.ROWID FROM chat c2
+        WHERE c2.chat_identifier = (SELECT chat_identifier FROM chat WHERE ROWID = ?)
+      )
       ORDER BY m.date DESC
       LIMIT ?
     `);
@@ -255,15 +280,20 @@ class IMessageService {
 
   /**
    * Get participants for a group chat
-   * Returns phone numbers/emails and their service type
+   * Returns phone numbers/emails and their service type.
+   * Unions participants across all sibling chat rows (iMessage/SMS) and
+   * deduplicates by handle_id.
    */
   getGroupParticipants(chatId: number): DBGroupParticipant[] {
     const db = this.getDb();
     const stmt = db.prepare(`
-      SELECT h.id as handle_id, h.service
+      SELECT DISTINCT h.id as handle_id, h.service
       FROM handle h
       JOIN chat_handle_join chj ON h.ROWID = chj.handle_id
-      WHERE chj.chat_id = ?
+      WHERE chj.chat_id IN (
+        SELECT c2.ROWID FROM chat c2
+        WHERE c2.chat_identifier = (SELECT chat_identifier FROM chat WHERE ROWID = ?)
+      )
     `);
     return stmt.all(chatId) as DBGroupParticipant[];
   }

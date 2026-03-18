@@ -2,9 +2,10 @@ import { useState } from 'react';
 
 interface PermissionOnboardingProps {
   onRetry: () => void;
+  appName?: string;
 }
 
-export function PermissionOnboarding({ onRetry }: PermissionOnboardingProps) {
+export function PermissionOnboarding({ onRetry, appName = 'myOS' }: PermissionOnboardingProps) {
   const [opening, setOpening] = useState(false);
 
   const handleOpenSettings = async () => {
@@ -32,7 +33,7 @@ export function PermissionOnboarding({ onRetry }: PermissionOnboardingProps) {
           Full Disk Access Required
         </h2>
         <p className="text-white/70 mb-6 leading-relaxed">
-          To read your iMessages, phoebeOS needs Full Disk Access permission.
+          To read your iMessages, {appName} needs Full Disk Access permission.
           Your messages stay on your device - we never upload or share them.
         </p>
 
@@ -55,7 +56,7 @@ export function PermissionOnboarding({ onRetry }: PermissionOnboardingProps) {
 
         <div className="mt-6 pt-6 border-t border-white/10">
           <p className="text-sm text-white/50">
-            In System Settings, find phoebeOS in the list and toggle the switch to enable access.
+            In System Settings, find {appName} in the list and toggle the switch to enable access.
           </p>
         </div>
       </div>

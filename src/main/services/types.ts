@@ -10,6 +10,8 @@ export interface DBConversation {
   last_message_date: number; // Apple nanoseconds
   is_from_me: number;
   handle_id: string | null;
+  cache_has_attachments: number;
+  attachment_mime_type: string | null;
 }
 
 export interface DBMessage {
@@ -23,6 +25,7 @@ export interface DBMessage {
   associated_message_guid: string | null;
   associated_message_type: number;
   sender_handle: string | null;
+  thread_originator_guid: string | null;
 }
 
 export interface DBAttachment {

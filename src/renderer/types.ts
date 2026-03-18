@@ -13,7 +13,26 @@ export type {
   InstagramAttachment,
   InstagramSendResult,
   InstagramAccountInfo,
+  // Tag system types
+  TagType,
+  Tag,
+  ContactIdentifier,
+  ContactTagAssignment,
+  // Dismissed thread types
+  DismissedThread,
+  // Digest system types
+  DigestCategory,
+  DigestEmailItem,
+  DigestImessageItem,
+  Digest,
+  // Pinned dashboard types
+  PinnedChat,
+  Cluster,
+  PinnedDashboard,
 } from '../shared/ipcTypes';
+
+// Re-export DEFAULT_TIER_TAGS constant
+export { DEFAULT_TIER_TAGS } from '../shared/ipcTypes';
 
 // Renderer-specific UI types
 export interface Message {
