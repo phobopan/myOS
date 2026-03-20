@@ -16,7 +16,6 @@
     "package": "npm run build && electron-builder",
     "package:mac": "npm run build && electron-builder --mac",
     "package:mac:arm64": "npm run build && electron-builder --mac --arm64",
-    "package:mac:x64": "npm run build && electron-builder --mac --x64",
     "typecheck": "tsc --noEmit -p tsconfig.main.json && tsc --noEmit -p tsconfig.json",
     "postinstall": "electron-builder install-app-deps",
     "rebuild": "electron-rebuild -f -w better-sqlite3"
