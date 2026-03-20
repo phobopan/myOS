@@ -529,10 +529,23 @@
 
   <script>
     const REPO = 'phobopan/myOS';
-    const releaseUrl = `https://github.com/${REPO}/releases/latest`;
-    document.getElementById('download-btn').href = releaseUrl;
-    document.getElementById('download-cta').href = releaseUrl;
-    document.getElementById('nav-dl').href = releaseUrl;
+    const fallbackUrl = `https://github.com/${REPO}/releases/latest`;
+
+    // Fetch latest release and find the .dmg asset for direct download
+    fetch(`https://api.github.com/repos/${REPO}/releases/latest`)
+      .then(r => r.json())
+      .then(release => {
+        const dmg = release.assets && release.assets.find(a => a.name.endsWith('.dmg'));
+        const url = dmg ? dmg.browser_download_url : fallbackUrl;
+        document.getElementById('download-btn').href = url;
+        document.getElementById('download-cta').href = url;
+        document.getElementById('nav-dl').href = url;
+      })
+      .catch(() => {
+        document.getElementById('download-btn').href = fallbackUrl;
+        document.getElementById('download-cta').href = fallbackUrl;
+        document.getElementById('nav-dl').href = fallbackUrl;
+      });
 
     // Showcase fan
     const stack = document.getElementById('showcase-stack');
