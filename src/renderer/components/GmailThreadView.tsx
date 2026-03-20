@@ -176,6 +176,7 @@ export const GmailThreadView = memo(function GmailThreadView({ threadId, onReply
 
         {/* Composer */}
         {thread && thread.messages.length > 0 && (
+          <div data-hint="composer-area">
           <GmailComposer
             thread={thread}
             lastMessage={thread.messages[thread.messages.length - 1]}
@@ -186,6 +187,7 @@ export const GmailThreadView = memo(function GmailThreadView({ threadId, onReply
             }}
             claudeAvailable={claudeAvailable}
           />
+          </div>
         )}
       </div>
     </main>

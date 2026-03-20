@@ -1,5 +1,6 @@
 import { useState, useEffect, KeyboardEvent, useRef } from 'react';
 import type { GmailThread, GmailMessage } from '../types';
+import { DraftingHint, useDraftingHint } from './DraftingHint';
 
 type ComposerMode = 'reply' | 'replyAll' | 'forward';
 
@@ -107,6 +108,7 @@ interface GmailComposerProps {
 export function GmailComposer({ thread, lastMessage, onSent, disabled = false, claudeAvailable = false }: GmailComposerProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [mode, setMode] = useState<ComposerMode>('reply');
+  const { showDraftingHint, dismissDraftingHint } = useDraftingHint();
   const [body, setBody] = useState('');
   const [toEmails, setToEmails] = useState<string[]>([]);
   const [ccEmails, setCcEmails] = useState<string[]>([]);
@@ -387,6 +389,9 @@ export function GmailComposer({ thread, lastMessage, onSent, disabled = false, c
         </div>
       </div>
 
+      {/* Drafting hint */}
+      {showDraftingHint && <DraftingHint onDismiss={dismissDraftingHint} />}
+
       {/* Body textarea */}
       <textarea
         value={body}
@@ -415,6 +420,7 @@ export function GmailComposer({ thread, lastMessage, onSent, disabled = false, c
               onClick={handleGenerateDraft}
               disabled={drafting || disabled || sending}
               title={hasDraft ? 'Regenerate draft' : 'AI Draft'}
+              data-hint="ai-draft-button"
               className="bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed text-white px-3 py-2 rounded-lg transition-colors flex items-center justify-center"
             >
               {drafting ? (

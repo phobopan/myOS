@@ -3,7 +3,7 @@ interface TitlebarProps {
   appName?: string;
 }
 
-export function Titlebar({ onSettingsClick, appName = 'myOS' }: TitlebarProps) {
+export function Titlebar({ onSettingsClick, appName = 'OS' }: TitlebarProps) {
   const handleDoubleClick = (e: React.MouseEvent) => {
     // Only trigger if clicking the titlebar itself, not buttons
     if (e.target === e.currentTarget) {

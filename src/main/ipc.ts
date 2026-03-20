@@ -112,6 +112,12 @@ export function registerIpcHandlers(): void {
     return dbConversations.map(mapDbConversation);
   });
 
+  // Resolve stale ROWIDs to canonical ones (for fixing dashboard pins)
+  ipcMain.handle('imessage:resolveCanonicalIds', async (_, ids: number[]): Promise<Record<number, number>> => {
+    const map = iMessageService.resolveCanonicalIds(ids);
+    return Object.fromEntries(map);
+  });
+
   ipcMain.handle('imessage:getMessages', async (_, chatId: number, limit?: number): Promise<IMessageMessage[]> => {
     const dbMessages = iMessageService.getMessages(chatId, limit || 100);
 

@@ -76,6 +76,29 @@ export function parseAttributedBody(buffer: Buffer | null): string | null {
   }
 }
 
+/**
+ * SQL expression that produces a dedup key for a chat row.
+ * - Named group chats (style=43 with a display_name): dedup by display_name
+ *   so iMessage and SMS versions of the same group merge into one.
+ * - Everything else: dedup by chat_identifier (handles iMessage/SMS 1:1 dupes).
+ */
+const DEDUP_KEY = `CASE WHEN c.style = 43 AND c.display_name IS NOT NULL AND c.display_name != '' THEN 'group:' || c.display_name ELSE c.chat_identifier END`;
+
+/**
+ * SQL subquery that finds all sibling chat ROWIDs for a given chat ROWID.
+ * Siblings are chats that would merge under the same dedup key (e.g. the
+ * iMessage and SMS versions of the same group chat, or iMessage/SMS rows
+ * for the same phone number).
+ */
+function siblingChatsSql(chatIdParam = '?'): string {
+  return `
+    SELECT c2.ROWID FROM chat c2
+    WHERE (${DEDUP_KEY.replace(/\bc\./g, 'c2.')}) = (
+      SELECT ${DEDUP_KEY.replace(/\bc\./g, 'c3.')} FROM chat c3 WHERE c3.ROWID = ${chatIdParam}
+    )
+  `;
+}
+
 class IMessageService {
   private db: Database.Database | null = null;
   private dbPath: string;
@@ -115,10 +138,10 @@ class IMessageService {
    */
   getConversations(limit = 50): DBConversation[] {
     const db = this.getDb();
-    // Deduplicate by chat_identifier: when the same phone number has both an
-    // iMessage and SMS chat row, keep only the one with the most recent message.
-    // Without this, a stale SMS chat can show as "unanswered" even though the
-    // user replied via the iMessage chat.
+    // Deduplicate chats so each unique conversation appears once:
+    // - 1:1 chats: dedup by chat_identifier (merges iMessage + SMS for same number)
+    // - Named group chats: dedup by display_name (merges iMessage + SMS group siblings)
+    // Keeps the row with the most recent message in each group.
     const stmt = db.prepare(`
       SELECT * FROM (
         SELECT
@@ -138,7 +161,7 @@ class IMessageService {
            WHERE maj.message_id = m.ROWID
            LIMIT 1) as attachment_mime_type,
           ROW_NUMBER() OVER (
-            PARTITION BY c.chat_identifier
+            PARTITION BY ${DEDUP_KEY}
             ORDER BY m.date DESC
           ) as rn
         FROM chat c
@@ -165,16 +188,15 @@ class IMessageService {
   /**
    * Get specific conversations by their ROWIDs (no is_from_me filter)
    * Used to load pinned conversations that may not appear in the recent list.
-   * Expands each ROWID to its chat_identifier, then deduplicates so that if
-   * a pinned chat has both iMessage and SMS rows, we return the freshest one.
+   * Expands each ROWID to its dedup key, finds ALL sibling chat rows, then
+   * deduplicates keeping the one with the most recent message.
    */
   getConversationsByIds(ids: number[]): DBConversation[] {
     if (ids.length === 0) return [];
     const db = this.getDb();
     const placeholders = ids.map(() => '?').join(',');
-    // Step 1: resolve the requested ROWIDs to their chat_identifiers
-    // Step 2: find ALL chat rows with those chat_identifiers (catches iMessage/SMS siblings)
-    // Step 3: deduplicate by chat_identifier, keeping the one with the most recent message
+    // Resolve each requested ROWID to its dedup key, find all sibling chats,
+    // then return only the freshest per dedup key.
     const stmt = db.prepare(`
       SELECT * FROM (
         SELECT
@@ -194,15 +216,15 @@ class IMessageService {
            WHERE maj.message_id = m.ROWID
            LIMIT 1) as attachment_mime_type,
           ROW_NUMBER() OVER (
-            PARTITION BY c.chat_identifier
+            PARTITION BY ${DEDUP_KEY}
             ORDER BY m.date DESC
           ) as rn
         FROM chat c
         LEFT JOIN chat_message_join cmj ON c.ROWID = cmj.chat_id
         LEFT JOIN message m ON cmj.message_id = m.ROWID
         LEFT JOIN handle h ON m.handle_id = h.ROWID
-        WHERE c.chat_identifier IN (
-          SELECT chat_identifier FROM chat WHERE ROWID IN (${placeholders})
+        WHERE (${DEDUP_KEY}) IN (
+          SELECT ${DEDUP_KEY.replace(/\bc\./g, 'c0.')} FROM chat c0 WHERE c0.ROWID IN (${placeholders})
         )
         AND m.ROWID = (
           SELECT m2.ROWID
@@ -221,17 +243,61 @@ class IMessageService {
   }
 
   /**
+   * Resolve ROWIDs to their canonical (freshest) ROWID per dedup key.
+   * Returns a map of requested ROWID → canonical ROWID (only includes entries
+   * where the canonical differs from the requested).
+   */
+  resolveCanonicalIds(ids: number[]): Map<number, number> {
+    const result = new Map<number, number>();
+    if (ids.length === 0) return result;
+    const db = this.getDb();
+    const placeholders = ids.map(() => '?').join(',');
+    const dedupKeyC = DEDUP_KEY;
+    const dedupKeyReq = DEDUP_KEY.replace(/\bc\./g, 'req.');
+    const stmt = db.prepare(`
+      SELECT
+        req.ROWID as requested_id,
+        canonical.id as canonical_id
+      FROM chat req
+      JOIN (
+        SELECT * FROM (
+          SELECT
+            c.ROWID as id,
+            ${dedupKeyC} as dedup_key,
+            ROW_NUMBER() OVER (
+              PARTITION BY ${dedupKeyC}
+              ORDER BY (
+                SELECT m.date FROM message m
+                JOIN chat_message_join cmj ON m.ROWID = cmj.message_id
+                WHERE cmj.chat_id = c.ROWID
+                  AND (m.associated_message_type IS NULL OR m.associated_message_type = 0)
+                ORDER BY m.date DESC LIMIT 1
+              ) DESC
+            ) as rn
+          FROM chat c
+        ) WHERE rn = 1
+      ) canonical ON canonical.dedup_key = (${dedupKeyReq})
+      WHERE req.ROWID IN (${placeholders})
+        AND req.ROWID != canonical.id
+    `);
+    const rows = stmt.all(...ids) as Array<{ requested_id: number; canonical_id: number }>;
+    for (const row of rows) {
+      result.set(row.requested_id, row.canonical_id);
+    }
+    return result;
+  }
+
+  /**
    * Get messages for a specific chat
    * Ordered by date descending (most recent first)
    * Includes reactions as separate message rows.
-   * Merges messages from all chat rows sharing the same chat_identifier
-   * (e.g. iMessage + SMS for the same phone number) so the thread view
-   * shows the complete conversation.
+   * Merges messages from all sibling chat rows (same dedup key) so the
+   * thread view shows the complete conversation across iMessage + SMS.
    */
   getMessages(chatId: number, limit = 50): DBMessage[] {
     const db = this.getDb();
     const stmt = db.prepare(`
-      SELECT
+      SELECT DISTINCT
         m.ROWID as id,
         m.guid,
         m.text,
@@ -246,10 +312,7 @@ class IMessageService {
       FROM message m
       JOIN chat_message_join cmj ON m.ROWID = cmj.message_id
       LEFT JOIN handle h ON m.handle_id = h.ROWID
-      WHERE cmj.chat_id IN (
-        SELECT c2.ROWID FROM chat c2
-        WHERE c2.chat_identifier = (SELECT chat_identifier FROM chat WHERE ROWID = ?)
-      )
+      WHERE cmj.chat_id IN (${siblingChatsSql()})
       ORDER BY m.date DESC
       LIMIT ?
     `);
@@ -290,10 +353,7 @@ class IMessageService {
       SELECT DISTINCT h.id as handle_id, h.service
       FROM handle h
       JOIN chat_handle_join chj ON h.ROWID = chj.handle_id
-      WHERE chj.chat_id IN (
-        SELECT c2.ROWID FROM chat c2
-        WHERE c2.chat_identifier = (SELECT chat_identifier FROM chat WHERE ROWID = ?)
-      )
+      WHERE chj.chat_id IN (${siblingChatsSql()})
     `);
     return stmt.all(chatId) as DBGroupParticipant[];
   }

@@ -124,6 +124,8 @@ export const Sidebar = memo(function Sidebar({
   const [sortMode, setSortMode] = useState<SortMode>('recent');
   // Inbox mode: "needs-reply" shows only unanswered, "all" shows everything
   const [inboxMode, setInboxMode] = useState<'needs-reply' | 'all'>('needs-reply');
+  // Search query
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Context menu state
   const [contextMenu, setContextMenu] = useState<{
@@ -368,10 +370,20 @@ export const Sidebar = memo(function Sidebar({
   return result;
   }, [conversations, gmailThreads, instagramConversations, inboxMode, sortMode, filter, selectedTagIds, selectedClusterIds, dashboardClusters, dismissedIds, gmailRepliedThreadIds, tags, tagAssignments]);
 
+  // Search within already-filtered messages
+  const searchedMessages = useMemo(() => {
+    if (!searchQuery.trim()) return filteredMessages;
+    const q = searchQuery.toLowerCase();
+    return filteredMessages.filter(
+      m => m.name.toLowerCase().includes(q) || m.preview.toLowerCase().includes(q)
+    );
+  }, [filteredMessages, searchQuery]);
+
   return (
     <aside className="w-80 flex-shrink-0 h-full flex flex-col border-r border-white/10">
+      <div data-hint="filters-area">
       {/* Filter Pills */}
-      <div className="p-2 border-b border-white/10" data-hint="source-filter">
+      <div className="p-2 border-b border-white/10">
         <div className="flex items-center gap-1 flex-wrap">
           <FilterPill label="All" active={filter === 'all'} onClick={() => onFilterChange('all')} />
           <FilterPill label="iMessage" active={filter === 'imessage'} onClick={() => onFilterChange('imessage')} />
@@ -450,11 +462,38 @@ export const Sidebar = memo(function Sidebar({
           All
         </button>
       </div>
+      {/* Search Bar */}
+      <div className="px-2 py-1.5 border-b border-white/10">
+        <div className="relative">
+          <svg className="absolute left-2 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            placeholder="Search conversations..."
+            className="w-full bg-white/5 border border-white/10 rounded-lg text-xs text-white placeholder-white/30 pl-7 pr-7 py-1.5 focus:outline-none focus:border-white/20 transition-colors"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-white/30 hover:text-white/60 transition-colors"
+            >
+              <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
+      </div>
+      </div>{/* end filters-area */}
 
       {/* Dashboard Home Button */}
       {onSelectDashboard && (
         <button
           onClick={onSelectDashboard}
+          data-hint="dashboard-button"
           className={`w-full p-3 text-left border-b border-white/10 transition-colors flex items-center gap-3 ${
             dashboardSelected ? 'bg-white/10' : 'hover:bg-white/5'
           }`}
@@ -506,14 +545,14 @@ export const Sidebar = memo(function Sidebar({
       )}
 
       {/* Unified Message List */}
-      <div className="flex-1 overflow-y-auto" onScroll={handleScroll}>
-        {filteredMessages.length === 0 ? (
+      <div className="flex-1 overflow-y-auto" onScroll={handleScroll} data-hint="conversation-list">
+        {searchedMessages.length === 0 ? (
           <div className="flex items-center justify-center h-32 text-white/40 text-sm">
-            No messages
+            {searchQuery ? 'No matching conversations' : 'No messages'}
           </div>
         ) : (
           <>
-          {filteredMessages.map((msg, msgIndex) => {
+          {searchedMessages.map((msg, msgIndex) => {
             const isSelected =
               (msg.source === 'imessage' && msg.imessageId === selectedImessageId) ||
               (msg.source === 'gmail' && msg.gmailThreadId === selectedGmailThreadId) ||
@@ -582,9 +621,9 @@ export const Sidebar = memo(function Sidebar({
       {/* Context Menu */}
       {contextMenu.isOpen && contextMenu.message && (
         <>
-          <div className="fixed inset-0 z-40" onClick={() => setContextMenu(prev => ({ ...prev, isOpen: false }))} />
+          <div className="fixed inset-0 z-[10000]" onClick={() => setContextMenu(prev => ({ ...prev, isOpen: false }))} />
           <div
-            className="fixed z-50 bg-[#2a2a2e] border border-white/10 rounded-lg shadow-xl py-1 min-w-[160px]"
+            className="fixed z-[10001] bg-[#2a2a2e] border border-white/10 rounded-lg shadow-xl py-1 min-w-[160px]"
             style={{ left: contextMenu.position.x, top: contextMenu.position.y }}
           >
             {onDismissThread && contextMenu.message.activityKey && (

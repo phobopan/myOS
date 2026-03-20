@@ -3,6 +3,7 @@ import type { IMessageConversation, IMessageMessage, Tag } from '../types';
 import { MessageBubble } from './MessageBubble';
 import { Composer } from './Composer';
 import { TagDots } from './TagBadge';
+import { DraftingHint, useDraftingHint } from './DraftingHint';
 
 function IMessageIcon() {
   return (
@@ -58,6 +59,7 @@ export const ThreadView = memo(function ThreadView({ conversation, onMessageSent
   const [sendError, setSendError] = useState<string | null>(null);
   const [highlightGuid, setHighlightGuid] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { showDraftingHint, dismissDraftingHint } = useDraftingHint();
   const messageRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   useEffect(() => {
@@ -69,8 +71,10 @@ export const ThreadView = memo(function ThreadView({ conversation, onMessageSent
   }, [conversation?.id]);
 
   useEffect(() => {
-    // Scroll to bottom when messages change - instant, no animation
-    messagesEndRef.current?.scrollIntoView({ behavior: 'instant' });
+    // Scroll to bottom when messages change — wait a frame for DOM to update
+    requestAnimationFrame(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'instant' });
+    });
   }, [messages]);
 
   // Build a guid -> message lookup
@@ -302,17 +306,20 @@ export const ThreadView = memo(function ThreadView({ conversation, onMessageSent
         )}
 
         {/* Composer */}
-        <Composer
-          onSend={handleSend}
-          disabled={!canSend}
-          placeholder={canSend ? 'Type a message...' : 'Unable to send to this conversation'}
-          claudeAvailable={claudeAvailable}
-          messages={messages.slice(-20).map(m => ({
-            sender: m.isFromMe ? 'Me' : (m.senderName || m.senderHandle || 'Them'),
-            text: m.text || '',
-          })).filter(m => m.text)}
-          contactName={getDisplayName(conversation)}
-        />
+        <div data-hint="composer-area">
+          {showDraftingHint && <DraftingHint onDismiss={dismissDraftingHint} />}
+          <Composer
+            onSend={handleSend}
+            disabled={!canSend}
+            placeholder={canSend ? 'Type a message...' : 'Unable to send to this conversation'}
+            claudeAvailable={claudeAvailable}
+            messages={messages.slice(-20).map(m => ({
+              sender: m.isFromMe ? 'Me' : (m.senderName || m.senderHandle || 'Them'),
+              text: m.text || '',
+            })).filter(m => m.text)}
+            contactName={getDisplayName(conversation)}
+          />
+        </div>
       </div>
     </main>
   );

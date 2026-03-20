@@ -15,6 +15,7 @@ contextBridge.exposeInMainWorld('electron', {
   imessage: {
     getConversations: (limit?: number) => ipcRenderer.invoke('imessage:getConversations', limit),
     getConversationsByIds: (ids: number[]) => ipcRenderer.invoke('imessage:getConversationsByIds', ids),
+    resolveCanonicalIds: (ids: number[]) => ipcRenderer.invoke('imessage:resolveCanonicalIds', ids),
     getMessages: (chatId: number, limit?: number) => ipcRenderer.invoke('imessage:getMessages', chatId, limit),
     isAccessible: () => ipcRenderer.invoke('imessage:isAccessible'),
     sendMessage: (recipient: string, message: string) => ipcRenderer.invoke('imessage:sendMessage', recipient, message),

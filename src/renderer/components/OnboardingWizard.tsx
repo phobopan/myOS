@@ -2,15 +2,23 @@ import { useState, useEffect } from 'react';
 
 interface OnboardingWizardProps {
   onComplete: () => void;
+  onNameChange?: (name: string) => void;
 }
 
 type LLMProviderOption = 'claude-cli' | 'claude-api' | 'openai' | 'gemini';
 
-const TOTAL_STEPS = 7;
+const TOTAL_STEPS = 4;
 
-export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
+export function OnboardingWizard({ onComplete, onNameChange: onNameChangeProp }: OnboardingWizardProps) {
   const [step, setStep] = useState(1);
   const [name, setName] = useState('');
+
+  // Notify parent when name changes so titlebar updates live
+  const handleNameChange = (value: string) => {
+    setName(value);
+    const displayName = value.trim() ? `${value.trim()}OS` : 'OS';
+    onNameChangeProp?.(displayName);
+  };
 
   // Step 2 - FDA
   const [fdaStatus, setFdaStatus] = useState<'checking' | 'authorized' | 'denied'>('checking');
@@ -93,10 +101,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   };
 
   const handleLlmSave = async () => {
-    // Save selected provider
     await window.electron.llm.setProvider(selectedProvider);
-
-    // If API key provided, save it
     if (selectedProvider !== 'claude-cli' && apiKey.trim()) {
       const providerKey = selectedProvider === 'claude-api' ? 'claude' : selectedProvider;
       await window.electron.llm.setApiKey(providerKey, apiKey.trim());
@@ -106,10 +111,7 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
   const handleLlmTest = async () => {
     setLlmTestStatus('testing');
     setLlmTestError(null);
-
-    // Save first so the test uses the right provider/key
     await handleLlmSave();
-
     try {
       const result = await window.electron.llm.testConnection(selectedProvider);
       if (result.success) {
@@ -128,7 +130,6 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     if (name.trim()) {
       await window.electron.app.setUserName(name.trim());
     }
-    // Save LLM settings
     await handleLlmSave();
     await window.electron.app.setOnboardingComplete(true);
     onComplete();
@@ -139,42 +140,28 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
     return true;
   };
 
-  const appDisplayName = name.trim() ? `${name.trim()}OS` : 'myOS';
-
-  const cardStyle = {
-    background: 'rgba(255, 255, 255, 0.1)',
-    backdropFilter: 'blur(20px)',
-    WebkitBackdropFilter: 'blur(20px)',
-    border: '1px solid rgba(255, 255, 255, 0.2)',
-  };
+  const appDisplayName = name.trim() ? `${name.trim()}OS` : 'OS';
 
   return (
     <div className="flex-1 flex flex-col items-center justify-center p-8">
-      {/* Progress dots */}
-      <div className="flex gap-2 mb-8">
+      {/* Progress bar */}
+      <div className="flex gap-1.5 mb-8">
         {Array.from({ length: TOTAL_STEPS }, (_, i) => (
           <div
             key={i}
-            className={`w-2 h-2 rounded-full transition-colors ${
-              i + 1 === step
-                ? 'bg-blue-400'
-                : i + 1 < step
-                ? 'bg-blue-400/50'
-                : 'bg-white/20'
+            className={`h-1 rounded-full transition-all ${
+              i + 1 <= step ? 'w-8 bg-white/60' : 'w-4 bg-white/15'
             }`}
           />
         ))}
       </div>
 
       {/* Step content */}
-      <div
-        className="w-full max-w-lg rounded-2xl p-8"
-        style={cardStyle}
-      >
+      <div className="w-full max-w-md">
         {step === 1 && (
           <Step1Name
             name={name}
-            onNameChange={setName}
+            onNameChange={handleNameChange}
             appDisplayName={appDisplayName}
           />
         )}
@@ -205,43 +192,42 @@ export function OnboardingWizard({ onComplete }: OnboardingWizardProps) {
             cliDetected={cliDetected}
           />
         )}
-        {step === 5 && <Step5TourMessaging appDisplayName={appDisplayName} />}
-        {step === 6 && <Step6TourOrganization />}
-        {step === 7 && <Step7TourDigest />}
       </div>
 
       {/* Navigation */}
-      <div className="flex gap-3 mt-6">
+      <div className="flex gap-3 mt-8">
         {step > 1 && (
           <button
             onClick={() => setStep(step - 1)}
-            className="px-6 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white/80 text-sm font-medium transition-colors"
+            className="px-5 py-2 rounded-lg text-white/50 hover:text-white/80 text-sm transition-colors"
           >
             Back
           </button>
         )}
         {step < TOTAL_STEPS ? (
-          <button
-            onClick={() => setStep(step + 1)}
-            disabled={!canProceed()}
-            className="px-6 py-2 rounded-xl bg-blue-500 hover:bg-blue-600 disabled:bg-blue-500/30 disabled:cursor-not-allowed text-white text-sm font-medium transition-colors"
-          >
-            {step === 1 ? 'Continue' : 'Next'}
-          </button>
+          <>
+            <button
+              onClick={() => setStep(step + 1)}
+              disabled={!canProceed()}
+              className="px-6 py-2 rounded-lg bg-white/15 hover:bg-white/25 disabled:bg-white/5 disabled:text-white/20 disabled:cursor-not-allowed text-white text-sm font-medium transition-colors"
+            >
+              Continue
+            </button>
+            {step > 1 && (
+              <button
+                onClick={() => setStep(step + 1)}
+                className="px-4 py-2 text-white/30 hover:text-white/50 text-sm transition-colors"
+              >
+                Skip
+              </button>
+            )}
+          </>
         ) : (
           <button
             onClick={handleFinish}
-            className="px-8 py-2 rounded-xl bg-blue-500 hover:bg-blue-600 text-white text-sm font-medium transition-colors"
+            className="px-8 py-2.5 rounded-lg bg-white/20 hover:bg-white/30 text-white text-sm font-medium transition-colors"
           >
             Get Started
-          </button>
-        )}
-        {step > 1 && step < TOTAL_STEPS && (
-          <button
-            onClick={() => setStep(step + 1)}
-            className="px-4 py-2 text-white/40 hover:text-white/60 text-sm transition-colors"
-          >
-            Skip
           </button>
         )}
       </div>
@@ -261,31 +247,30 @@ function Step1Name({
   appDisplayName: string;
 }) {
   return (
-    <div className="text-center">
-      <h2 className="text-3xl font-bold text-white mb-2">
-        Welcome to <span className="text-blue-400">{appDisplayName}</span>
+    <div className="flex flex-col items-center">
+      {/* App icon */}
+      <img
+        src="./icon.png"
+        alt=""
+        className="w-16 h-16 mb-6"
+        draggable={false}
+      />
+
+      {/* Title */}
+      <h2 className="text-sm font-medium text-white mb-1">
+        {name.trim() ? appDisplayName : 'Set up your app'}
       </h2>
-      <p className="text-white/60 mb-8">
-        Your unified inbox. Let's personalize it.
-      </p>
-      <div className="max-w-xs mx-auto">
-        <label className="block text-sm text-white/70 mb-2 text-left">
-          Your first name
-        </label>
-        <input
-          type="text"
-          value={name}
-          onChange={(e) => onNameChange(e.target.value)}
-          placeholder="Enter your name"
-          className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/30 focus:outline-none focus:border-blue-500 text-center text-lg"
-          autoFocus
-        />
-      </div>
-      {name.trim() && (
-        <p className="text-white/40 text-sm mt-4">
-          Your app will be called <span className="text-white/70 font-medium">{appDisplayName}</span>
-        </p>
-      )}
+      <p className="text-xs text-white/40 mb-6">Enter your first name to personalize.</p>
+
+      {/* Input — matches app's glass input style */}
+      <input
+        type="text"
+        value={name}
+        onChange={(e) => onNameChange(e.target.value.toLowerCase())}
+        placeholder="first name"
+        className="w-full max-w-[220px] px-3 py-2 bg-white/[0.06] border border-white/10 rounded-lg text-white text-sm text-center placeholder-white/20 focus:outline-none focus:border-white/20 transition-colors"
+        autoFocus
+      />
     </div>
   );
 }
@@ -303,24 +288,24 @@ function Step2FDA({
 
   return (
     <div className="text-center">
-      <h2 className="text-2xl font-bold text-white mb-2">Full Disk Access</h2>
-      <p className="text-white/60 mb-6">
-        Required to read your iMessages. Your messages stay on your device.
+      <h2 className="text-lg font-semibold text-white mb-2">Full Disk Access</h2>
+      <p className="text-white/50 mb-6 text-sm">
+        Required to read your iMessages. Everything stays on your device.
       </p>
 
-      <div className="flex items-center justify-center gap-3 mb-6">
+      <div className="flex items-center justify-center gap-2.5 mb-6">
         <div
-          className={`w-3 h-3 rounded-full ${
+          className={`w-2.5 h-2.5 rounded-full ${
             status === 'authorized'
               ? 'bg-green-500'
               : status === 'checking'
-              ? 'bg-yellow-500 animate-pulse'
-              : 'bg-yellow-500'
+              ? 'bg-white/40 animate-pulse'
+              : 'bg-white/30'
           }`}
         />
-        <span className="text-sm text-white/70">
+        <span className="text-sm text-white/60">
           {status === 'authorized'
-            ? 'Full Disk Access granted'
+            ? 'Access granted'
             : status === 'checking'
             ? 'Checking...'
             : 'Not yet granted'}
@@ -328,16 +313,16 @@ function Step2FDA({
       </div>
 
       {status !== 'authorized' && (
-        <div className="space-y-3">
+        <div className="space-y-2">
           <button
             onClick={handleOpenSettings}
-            className="w-full bg-blue-500 hover:bg-blue-600 text-white px-6 py-3 rounded-xl font-medium transition-colors"
+            className="w-full bg-white/15 hover:bg-white/25 text-white px-6 py-2.5 rounded-lg text-sm font-medium transition-colors"
           >
             Open System Settings
           </button>
           <button
             onClick={onCheckAgain}
-            className="w-full bg-white/10 hover:bg-white/20 text-white/80 px-6 py-3 rounded-xl font-medium transition-colors"
+            className="w-full text-white/40 hover:text-white/60 px-6 py-2 text-sm transition-colors"
           >
             Check Again
           </button>
@@ -345,7 +330,7 @@ function Step2FDA({
       )}
 
       {status === 'authorized' && (
-        <div className="p-3 rounded-xl bg-green-500/10 border border-green-500/20">
+        <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20">
           <p className="text-sm text-green-400">iMessage access is ready.</p>
         </div>
       )}
@@ -368,18 +353,18 @@ function Step3Gmail({
 }) {
   return (
     <div className="text-center">
-      <h2 className="text-2xl font-bold text-white mb-2">Connect Gmail</h2>
-      <p className="text-white/60 mb-6 text-sm">
-        Sign in with your Google account to see your emails here.
+      <h2 className="text-lg font-semibold text-white mb-2">Connect Gmail</h2>
+      <p className="text-white/50 mb-6 text-sm">
+        Sign in with Google to see your emails here.
       </p>
 
       {connected ? (
         <div className="space-y-3">
-          <div className="flex items-center justify-center gap-3">
-            <div className="w-3 h-3 rounded-full bg-green-500" />
-            <span className="text-sm text-white/70">Connected{email ? ` as ${email}` : ''}</span>
+          <div className="flex items-center justify-center gap-2.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-green-500" />
+            <span className="text-sm text-white/60">Connected{email ? ` as ${email}` : ''}</span>
           </div>
-          <div className="p-3 rounded-xl bg-green-500/10 border border-green-500/20">
+          <div className="p-3 rounded-lg bg-green-500/10 border border-green-500/20">
             <p className="text-sm text-green-400">Gmail is ready.</p>
           </div>
         </div>
@@ -388,19 +373,19 @@ function Step3Gmail({
           <button
             onClick={onConnect}
             disabled={connecting}
-            className="w-full bg-blue-500 hover:bg-blue-600 disabled:bg-blue-500/50 text-white px-6 py-3 rounded-xl font-medium transition-colors"
+            className="w-full bg-white/15 hover:bg-white/25 disabled:bg-white/5 disabled:text-white/30 text-white px-6 py-2.5 rounded-lg text-sm font-medium transition-colors"
           >
             {connecting ? 'Connecting...' : 'Connect Gmail'}
           </button>
 
           {connecting && (
-            <p className="text-xs text-white/40">
+            <p className="text-xs text-white/30">
               A browser window will open for Google sign-in.
             </p>
           )}
 
           {error && (
-            <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/20">
+            <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20">
               <p className="text-sm text-red-400">{error}</p>
             </div>
           )}
@@ -411,10 +396,10 @@ function Step3Gmail({
 }
 
 const LLM_PROVIDERS: Array<{ id: LLMProviderOption; name: string; description: string; needsKey: boolean }> = [
-  { id: 'claude-cli', name: 'Claude Code CLI', description: 'Uses locally installed Claude CLI (free with Claude subscription)', needsKey: false },
+  { id: 'claude-cli', name: 'Claude Code CLI', description: 'Uses locally installed Claude CLI', needsKey: false },
   { id: 'claude-api', name: 'Claude API', description: 'Anthropic API with your own key', needsKey: true },
-  { id: 'openai', name: 'OpenAI', description: 'GPT-4o with your OpenAI API key', needsKey: true },
-  { id: 'gemini', name: 'Google Gemini', description: 'Gemini 2.0 Flash with your Google AI key', needsKey: true },
+  { id: 'openai', name: 'OpenAI', description: 'GPT-4o with your API key', needsKey: true },
+  { id: 'gemini', name: 'Google Gemini', description: 'Gemini 2.0 Flash with your API key', needsKey: true },
 ];
 
 function Step4LLMSetup({
@@ -440,12 +425,12 @@ function Step4LLMSetup({
 
   return (
     <div>
-      <h2 className="text-2xl font-bold text-white mb-2 text-center">AI Provider</h2>
-      <p className="text-white/60 mb-6 text-sm text-center">
-        Choose which AI powers features like message drafting and daily digest.
+      <h2 className="text-lg font-semibold text-white mb-2 text-center">AI Provider</h2>
+      <p className="text-white/50 mb-6 text-sm text-center">
+        Powers message drafting and daily digest.
       </p>
 
-      <div className="space-y-2 mb-6">
+      <div className="space-y-1.5 mb-6">
         {LLM_PROVIDERS.map(provider => (
           <button
             key={provider.id}
@@ -453,23 +438,25 @@ function Step4LLMSetup({
               onSelectProvider(provider.id);
               onApiKeyChange('');
             }}
-            className={`w-full text-left p-3 rounded-xl border transition-colors ${
+            className={`w-full text-left p-3 rounded-lg border transition-colors ${
               selectedProvider === provider.id
-                ? 'border-blue-500 bg-blue-500/10'
-                : 'border-white/10 bg-white/5 hover:bg-white/10'
+                ? 'border-white/30 bg-white/10'
+                : 'border-white/5 bg-white/[0.03] hover:bg-white/[0.06]'
             }`}
           >
             <div className="flex items-center justify-between">
               <div>
                 <div className="text-sm font-medium text-white">{provider.name}</div>
-                <div className="text-xs text-white/50">{provider.description}</div>
+                <div className="text-xs text-white/40">{provider.description}</div>
               </div>
-              {provider.id === 'claude-cli' && cliDetected !== null && (
-                <div className={`w-2.5 h-2.5 rounded-full ${cliDetected ? 'bg-green-500' : 'bg-yellow-500'}`} />
-              )}
-              {selectedProvider === provider.id && (
-                <div className="w-2.5 h-2.5 rounded-full bg-blue-400" />
-              )}
+              <div className="flex items-center gap-2">
+                {provider.id === 'claude-cli' && cliDetected !== null && (
+                  <div className={`w-2 h-2 rounded-full ${cliDetected ? 'bg-green-500' : 'bg-white/30'}`} />
+                )}
+                {selectedProvider === provider.id && (
+                  <div className="w-2 h-2 rounded-full bg-white/70" />
+                )}
+              </div>
             </div>
           </button>
         ))}
@@ -478,29 +465,29 @@ function Step4LLMSetup({
       {/* API Key input for key-based providers */}
       {currentProvider.needsKey && (
         <div className="mb-4">
-          <label className="block text-sm text-white/70 mb-2">API Key</label>
+          <label className="block text-sm text-white/50 mb-2">API Key</label>
           <input
             type="password"
             value={apiKey}
             onChange={(e) => onApiKeyChange(e.target.value)}
             placeholder={`Enter your ${currentProvider.name} API key`}
-            className="w-full px-4 py-2.5 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/30 focus:outline-none focus:border-blue-500 text-sm font-mono"
+            className="w-full px-4 py-2.5 bg-white/5 border border-white/10 rounded-lg text-white placeholder-white/20 focus:outline-none focus:border-white/30 text-sm font-mono"
           />
         </div>
       )}
 
       {/* CLI status for Claude CLI */}
       {selectedProvider === 'claude-cli' && cliDetected === false && (
-        <div className="p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/20 mb-4">
-          <p className="text-xs text-yellow-400">
+        <div className="p-3 rounded-lg bg-white/5 border border-white/10 mb-4">
+          <p className="text-xs text-white/50">
             Claude CLI not detected. Install it from{' '}
             <button
               onClick={() => window.electron.shell.openExternal('https://docs.anthropic.com/en/docs/claude-code/overview')}
-              className="underline"
+              className="underline text-white/70"
             >
               anthropic.com
             </button>
-            , or choose an API provider instead.
+            , or choose an API provider.
           </p>
         </div>
       )}
@@ -509,219 +496,22 @@ function Step4LLMSetup({
       <button
         onClick={onTest}
         disabled={testStatus === 'testing' || (currentProvider.needsKey && !apiKey.trim())}
-        className="w-full bg-white/10 hover:bg-white/20 disabled:bg-white/5 disabled:text-white/30 text-white/80 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors"
+        className="w-full bg-white/[0.06] hover:bg-white/10 disabled:bg-white/[0.03] disabled:text-white/20 text-white/60 px-4 py-2 rounded-lg text-sm transition-colors"
       >
         {testStatus === 'testing' ? 'Testing...' : 'Test Connection'}
       </button>
 
       {testStatus === 'success' && (
-        <div className="mt-3 p-3 rounded-xl bg-green-500/10 border border-green-500/20">
+        <div className="mt-3 p-3 rounded-lg bg-green-500/10 border border-green-500/20">
           <p className="text-sm text-green-400">Connection successful!</p>
         </div>
       )}
 
       {testStatus === 'error' && testError && (
-        <div className="mt-3 p-3 rounded-xl bg-red-500/10 border border-red-500/20">
+        <div className="mt-3 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
           <p className="text-sm text-red-400">{testError}</p>
         </div>
       )}
     </div>
-  );
-}
-
-function Step5TourMessaging({ appDisplayName }: { appDisplayName: string }) {
-  return (
-    <div className="text-center">
-      <h2 className="text-2xl font-bold text-white mb-2">Unified Inbox</h2>
-      <p className="text-white/60 mb-6 text-sm">
-        {appDisplayName} brings all your messages into one place.
-      </p>
-
-      <div className="space-y-3 mb-4">
-        <FeatureCard
-          icon={<InboxIcon />}
-          title="All Messages, One View"
-          description="iMessage, Gmail, and Instagram conversations appear in a single sidebar sorted by time or priority."
-        />
-        <FeatureCard
-          icon={<FilterIcon />}
-          title="Filter by Source"
-          description="Quickly toggle between All, iMessage, and Gmail using the filter pills at the top."
-        />
-        <FeatureCard
-          icon={<CheckIcon />}
-          title="Mark as Done"
-          description="Right-click any conversation and mark it as done to clear it from your inbox. It comes back if they reply."
-        />
-        <FeatureCard
-          icon={<PinIcon />}
-          title="Pin to Dashboard"
-          description="Pin important conversations to your dashboard for quick access and visual organization."
-        />
-      </div>
-    </div>
-  );
-}
-
-function Step6TourOrganization() {
-  return (
-    <div className="text-center">
-      <h2 className="text-2xl font-bold text-white mb-2">Stay Organized</h2>
-      <p className="text-white/60 mb-6 text-sm">
-        Tags, clusters, and filters help you focus on what matters.
-      </p>
-
-      <div className="space-y-3 mb-4">
-        <FeatureCard
-          icon={<TagIcon />}
-          title="Tags"
-          description="Assign priority tiers (Tier 1-4) or custom tags to contacts. Filter your inbox by tag to see only VIPs."
-        />
-        <FeatureCard
-          icon={<GridIcon />}
-          title="Dashboard Clusters"
-          description="Group pinned conversations into clusters like 'Work', 'Family', or 'Projects' on your dashboard."
-        />
-        <FeatureCard
-          icon={<FilterIcon />}
-          title="Tag & Cluster Filters"
-          description="Click filter pills in the sidebar to instantly show only contacts with specific tags or in specific clusters."
-        />
-      </div>
-    </div>
-  );
-}
-
-function Step7TourDigest() {
-  return (
-    <div className="text-center">
-      <h2 className="text-2xl font-bold text-white mb-2">Daily Digest</h2>
-      <p className="text-white/60 mb-6 text-sm">
-        AI-powered summaries of what needs your attention.
-      </p>
-
-      <div className="space-y-3 mb-4">
-        <FeatureCard
-          icon={<DigestIcon />}
-          title="Smart Triage"
-          description="AI reads your unread emails and messages, categorizes them, and highlights what's urgent."
-        />
-        <FeatureCard
-          icon={<CategoryIcon />}
-          title="Custom Categories"
-          description="Create categories like 'Deals', 'Personal', 'Work' in Settings. The AI sorts emails into them."
-        />
-        <FeatureCard
-          icon={<ClockIcon />}
-          title="Auto-Schedule"
-          description="Set daily, hourly, or weekly digest generation. Get a fresh summary without lifting a finger."
-        />
-        <FeatureCard
-          icon={<CalendarIcon />}
-          title="Lookback Window"
-          description="Choose how many days back to scan — from 1 day for quick daily updates to 30 days for a full review."
-        />
-      </div>
-
-      <p className="text-xs text-white/40">
-        Configure everything in Settings after you get started.
-      </p>
-    </div>
-  );
-}
-
-// ─── Helper Components ──────────────────────────────────────────
-
-function FeatureCard({ icon, title, description }: { icon: React.ReactNode; title: string; description: string }) {
-  return (
-    <div className="flex items-start gap-3 p-3 rounded-xl bg-white/5 text-left">
-      <div className="text-blue-400 mt-0.5 flex-shrink-0">{icon}</div>
-      <div>
-        <div className="text-sm font-medium text-white">{title}</div>
-        <div className="text-xs text-white/50">{description}</div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Icons ──────────────────────────────────────────────────────
-
-function InboxIcon() {
-  return (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-    </svg>
-  );
-}
-
-function FilterIcon() {
-  return (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
-    </svg>
-  );
-}
-
-function CheckIcon() {
-  return (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-  );
-}
-
-function PinIcon() {
-  return (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-    </svg>
-  );
-}
-
-function TagIcon() {
-  return (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-    </svg>
-  );
-}
-
-function GridIcon() {
-  return (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
-    </svg>
-  );
-}
-
-function DigestIcon() {
-  return (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-    </svg>
-  );
-}
-
-function CategoryIcon() {
-  return (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-    </svg>
-  );
-}
-
-function ClockIcon() {
-  return (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-    </svg>
-  );
-}
-
-function CalendarIcon() {
-  return (
-    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-    </svg>
   );
 }

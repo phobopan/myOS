@@ -48,7 +48,7 @@ const TRAFFIC_LIGHT_HEIGHT = 14;
 
 function getAppDisplayName(): string {
   const name = settingsStore.get('userName');
-  return name ? `${name}OS` : 'myOS';
+  return name ? `${name}OS` : 'OS';
 }
 
 function updateAppBundleName(name: string): void {

@@ -19,7 +19,7 @@ const INSTAGRAM_ENABLED = false;
 
 export default function App() {
   const [onboardingComplete, setOnboardingComplete] = useState<boolean | null>(null);
-  const [appName, setAppName] = useState('myOS');
+  const [appName, setAppName] = useState('OS');
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [filter, setFilter] = useState<SourceFilter>('all');
   const [selectedImessageId, setSelectedImessageId] = useState<number | null>(null);
@@ -82,7 +82,7 @@ export default function App() {
   const [selectedClusterIds, setSelectedClusterIds] = useState<string[]>([]);
 
   // Feature hints (post-onboarding tooltips)
-  const featureHints = useFeatureHints();
+  const featureHints = useFeatureHints(onboardingComplete === true);
 
   // Keep a reference to the currently selected conversation so it persists after reply
   const selectedConversationRef = useRef<IMessageConversation | null>(null);
@@ -98,9 +98,11 @@ export default function App() {
     const checkOnboarding = async () => {
       try {
         const complete = await window.electron.app.getOnboardingComplete();
-        const name = await window.electron.app.getAppName();
         setOnboardingComplete(complete);
-        setAppName(name);
+        if (complete) {
+          const name = await window.electron.app.getAppName();
+          setAppName(name);
+        }
       } catch {
         setOnboardingComplete(false);
       }
@@ -501,7 +503,7 @@ export default function App() {
 
   const loadConversations = async () => {
     try {
-      const convs = await window.electron.imessage.getConversations(50);
+      let convs = await window.electron.imessage.getConversations(50);
 
       // Check for new messages (not from me)
       if (initialLoadCompleteRef.current) {
@@ -543,6 +545,68 @@ export default function App() {
         }
       } catch (err) {
         console.error('Failed to supplement pinned conversations:', err);
+      }
+
+      // Deduplicate conversations — keep the entry with the most recent message.
+      // The SQL already deduplicates by chat_identifier (1:1) and display_name
+      // (group chats), but supplementing pinned convos can re-introduce dupes.
+      const seen = new Map<string, number>();
+      for (let i = 0; i < convs.length; i++) {
+        // Use same dedup key as the SQL: group chats by displayName, others by chatIdentifier
+        const key = convs[i].isGroup && convs[i].displayName
+          ? `group:${convs[i].displayName}`
+          : convs[i].chatIdentifier;
+        const prev = seen.get(key);
+        if (prev !== undefined) {
+          const prevDate = new Date(convs[prev].lastMessageDate).getTime();
+          const currDate = new Date(convs[i].lastMessageDate).getTime();
+          if (currDate > prevDate) {
+            seen.set(key, i);
+          }
+        } else {
+          seen.set(key, i);
+        }
+      }
+      const keepIndices = new Set(seen.values());
+      convs = convs.filter((_, i) => keepIndices.has(i));
+
+      // Fix stale dashboard pin IDs: if a pin references a ROWID that was
+      // deduped away (e.g. SMS row replaced by iMessage row for same contact),
+      // update it to the canonical ROWID
+      try {
+        const dashboard = await window.electron.dashboard.get();
+        const imessagePinIds: number[] = [];
+        for (const pin of dashboard.unclusteredPins) {
+          if (pin.source === 'imessage') imessagePinIds.push(Number(pin.id));
+        }
+        for (const cluster of dashboard.clusters) {
+          for (const pin of cluster.pins) {
+            if (pin.source === 'imessage') imessagePinIds.push(Number(pin.id));
+          }
+        }
+        const canonicalIds = new Set(convs.map(c => c.id));
+        const staleIds = imessagePinIds.filter(id => !canonicalIds.has(id));
+        if (staleIds.length > 0) {
+          const remapped = await window.electron.imessage.resolveCanonicalIds(staleIds);
+          let dashboardDirty = false;
+          const fixPin = (pin: { source: string; id: string }) => {
+            if (pin.source !== 'imessage') return;
+            const newId = remapped[Number(pin.id)];
+            if (newId !== undefined) {
+              pin.id = String(newId);
+              dashboardDirty = true;
+            }
+          };
+          for (const pin of dashboard.unclusteredPins) fixPin(pin);
+          for (const cluster of dashboard.clusters) {
+            for (const pin of cluster.pins) fixPin(pin);
+          }
+          if (dashboardDirty) {
+            await window.electron.dashboard.save(dashboard);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to fix stale pin IDs:', err);
       }
 
       setConversations(convs);
@@ -898,7 +962,7 @@ export default function App() {
     return (
       <div className="app-background h-screen flex flex-col text-white">
         <Titlebar appName={appName} />
-        <OnboardingWizard onComplete={handleOnboardingComplete} />
+        <OnboardingWizard onComplete={handleOnboardingComplete} onNameChange={setAppName} />
       </div>
     );
   }
@@ -1042,12 +1106,15 @@ export default function App() {
       {featureHints.currentHint && (
         <FeatureTooltip
           targetSelector={featureHints.currentHint.targetSelector}
+          fallbackSelector={featureHints.currentHint.fallbackSelector}
           title={featureHints.currentHint.title}
           description={featureHints.currentHint.description}
           position={featureHints.currentHint.position}
           hasNext={featureHints.hasNext}
           onDismiss={featureHints.dismissAll}
           onNext={featureHints.nextHint}
+          stepNumber={featureHints.stepNumber}
+          totalSteps={featureHints.totalSteps}
         />
       )}
 

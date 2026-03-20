@@ -42,6 +42,7 @@ interface ElectronAPI {
   imessage: {
     getConversations: (limit?: number) => Promise<IMessageConversation[]>;
     getConversationsByIds: (ids: number[]) => Promise<IMessageConversation[]>;
+    resolveCanonicalIds: (ids: number[]) => Promise<Record<number, number>>;
     getMessages: (chatId: number, limit?: number) => Promise<IMessageMessage[]>;
     isAccessible: () => Promise<boolean>;
     sendMessage: (recipient: string, message: string) => Promise<SendResult>;

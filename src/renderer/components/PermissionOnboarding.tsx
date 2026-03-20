@@ -5,7 +5,7 @@ interface PermissionOnboardingProps {
   appName?: string;
 }
 
-export function PermissionOnboarding({ onRetry, appName = 'myOS' }: PermissionOnboardingProps) {
+export function PermissionOnboarding({ onRetry, appName = 'OS' }: PermissionOnboardingProps) {
   const [opening, setOpening] = useState(false);
 
   const handleOpenSettings = async () => {

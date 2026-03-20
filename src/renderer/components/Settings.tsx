@@ -73,7 +73,7 @@ export const Settings = memo(function Settings({
   digestIntervalHours = 1,
   digestWeekday = 1,
   onDigestAutoSettingsChange,
-  appName = 'myOS',
+  appName = 'OS',
 }: SettingsProps) {
   const [showInstagramLogin, setShowInstagramLogin] = useState(false);
   const [instagramUsername, setInstagramUsername] = useState('');

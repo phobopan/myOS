@@ -60,19 +60,19 @@ export function PinnedDashboard({
     reload();
   }, [refreshKey, reload]);
 
-  // Build preview map — show last message for ALL conversations (not just unanswered)
+  // Build preview map — only show bubble when the last message is NOT from me
   const unreadMap = useMemo(() => {
     const map = new Map<string, UnreadInfo>();
 
     for (const conv of conversations) {
-      if (conv.lastMessage) {
+      if (conv.lastMessage && !conv.isFromMe) {
         map.set(`imessage-${conv.id}`, { text: conv.lastMessage, count: 1 });
       }
     }
 
     for (const thread of gmailThreads) {
       const lastMsg = thread.messages[thread.messages.length - 1];
-      if (lastMsg) {
+      if (lastMsg && !lastMsg.labelIds?.includes('SENT')) {
         map.set(`gmail-${thread.id}`, {
           text: lastMsg.snippet || lastMsg.subject || 'Email',
           count: 1,
@@ -81,7 +81,7 @@ export function PinnedDashboard({
     }
 
     for (const conv of instagramConversations) {
-      if (conv.lastMessage?.text) {
+      if (conv.lastMessage?.text && conv.lastMessage.fromUser) {
         map.set(`instagram-${conv.id}`, {
           text: conv.lastMessage.text,
           count: 1,

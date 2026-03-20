@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 
-interface FeatureHint {
+export interface FeatureHint {
   id: string;
   targetSelector: string;
+  /** Fallback selector if primary target isn't found */
+  fallbackSelector?: string;
   title: string;
   description: string;
   position?: 'top' | 'bottom' | 'left' | 'right';
@@ -11,63 +13,71 @@ interface FeatureHint {
 const FEATURE_HINTS: FeatureHint[] = [
   {
     id: 'filter-pills',
-    targetSelector: '[data-hint="source-filter"]',
-    title: 'Filter messages by source',
-    description: 'Click these pills to show only iMessage, Gmail, or all conversations at once.',
+    targetSelector: '[data-hint="filters-area"]',
+    title: 'Filter & sort your inbox',
+    description: 'Filter by source, tags, or clusters. Sort by recent or priority, and toggle between unreplied and all messages.',
     position: 'bottom',
   },
   {
-    id: 'pin-conversation',
-    targetSelector: '[data-hint="conversation-item"]',
-    title: 'Pin conversations to your dashboard',
-    description: 'Right-click any conversation to pin it, mark as done, assign tags, or add to a cluster.',
+    id: 'conversation-item',
+    targetSelector: '[data-hint="conversation-list"]',
+    title: 'Manage conversations',
+    description: 'Click to open a conversation. Right-click for actions like pin, tag, or mark as done.',
     position: 'right',
   },
   {
-    id: 'settings-tags',
-    targetSelector: '[data-hint="settings-button"]',
-    title: 'Set up tags to organize contacts',
-    description: 'Open Settings to create custom tags, manage AI providers, and configure your digest.',
-    position: 'bottom',
+    id: 'dashboard-button',
+    targetSelector: '[data-hint="dashboard-button"]',
+    title: 'Your pinned dashboard',
+    description: 'Open your dashboard — a spatial canvas for pinned conversations and clusters.',
+    position: 'right',
   },
   {
     id: 'digest-button',
     targetSelector: '[data-hint="digest-button"]',
     title: 'Generate your Daily Digest',
-    description: 'Click here to get an AI-powered summary of your unread messages and emails.',
+    description: 'Get an AI-powered summary of what needs your attention.',
     position: 'right',
+  },
+  {
+    id: 'settings-tags',
+    targetSelector: '[data-hint="settings-button"]',
+    title: 'Settings & customization',
+    description: 'Manage tags, AI providers, digest preferences, and connected accounts.',
+    position: 'bottom',
   },
 ];
 
 const STORAGE_KEY = 'featureHintsSeen';
 
-export function useFeatureHints() {
+const DEV_FORCE_TOUR = false;
+
+export function useFeatureHints(onboardingComplete: boolean) {
   const [seenHints, setSeenHints] = useState<string[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [active, setActive] = useState(false);
 
-  // Load seen hints from electron-store on mount
+  // Activate hints when onboarding completes
   useEffect(() => {
-    window.electron.app.getOnboardingComplete().then(complete => {
-      if (!complete) return; // Don't show hints during onboarding
+    if (!onboardingComplete) return;
 
-      // Load from localStorage (simpler than adding more IPC for this)
-      try {
-        const seen = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
-        setSeenHints(seen);
+    if (DEV_FORCE_TOUR) {
+      localStorage.removeItem(STORAGE_KEY);
+    }
 
-        // Find the first unseen hint
-        const firstUnseen = FEATURE_HINTS.findIndex(h => !seen.includes(h.id));
-        if (firstUnseen >= 0) {
-          setCurrentIndex(firstUnseen);
-          // Small delay so the main UI renders first
-          setTimeout(() => setActive(true), 1500);
-        }
-      } catch {
-        setActive(true);
+    try {
+      const seen = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+      setSeenHints(seen);
+
+      const firstUnseen = FEATURE_HINTS.findIndex(h => !seen.includes(h.id));
+      if (firstUnseen >= 0) {
+        setCurrentIndex(firstUnseen);
+        setTimeout(() => setActive(true), 1500);
       }
-    });
-  }, []);
+    } catch {
+      setActive(true);
+    }
+  }, [onboardingComplete]);
 
   const currentHint = active ? FEATURE_HINTS[currentIndex] : null;
   const hasNext = currentIndex < FEATURE_HINTS.length - 1 &&
@@ -93,7 +103,6 @@ export function useFeatureHints() {
       markSeen(currentHint.id);
     }
 
-    // Find next unseen hint
     let nextIdx = currentIndex + 1;
     while (nextIdx < FEATURE_HINTS.length && seenHints.includes(FEATURE_HINTS[nextIdx].id)) {
       nextIdx++;
@@ -120,5 +129,7 @@ export function useFeatureHints() {
     nextHint,
     dismissAll,
     active,
+    stepNumber: currentIndex + 1,
+    totalSteps: FEATURE_HINTS.length,
   };
 }

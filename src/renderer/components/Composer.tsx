@@ -112,6 +112,7 @@ export function Composer({
             onClick={handleGenerateDraft}
             disabled={drafting || disabled || sending}
             title={hasDraft ? 'Regenerate draft' : 'AI Draft'}
+            data-hint="ai-draft-button"
             className="bg-white/10 hover:bg-white/20 disabled:opacity-50 disabled:cursor-not-allowed text-white px-3 py-2.5 rounded-xl transition-colors h-[42px] flex items-center justify-center"
           >
             {drafting ? (
