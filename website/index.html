@@ -4,189 +4,167 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>myOS — Your Unified Inbox</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,600&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
-    :root {
-      --bg: #050505;
-      --glass: rgba(255, 255, 255, 0.03);
-      --glass-border: rgba(255, 255, 255, 0.055);
-      --glass-hover: rgba(255, 255, 255, 0.055);
-      --text: #e8e8e8;
-      --text-secondary: rgba(255, 255, 255, 0.4);
-      --text-tertiary: rgba(255, 255, 255, 0.18);
-      --fig-dark: #380702;
-      --fig-wine: #7c3230;
-      --fig-olive: #98824c;
-      --fig-sand: #bba47b;
+    @font-face {
+      font-family: 'SF Pro';
+      src: url('https://sf.abarber.me/SF-Pro-Display-Regular.otf') format('opentype');
+      font-weight: 400;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'SF Pro';
+      src: url('https://sf.abarber.me/SF-Pro-Display-Medium.otf') format('opentype');
+      font-weight: 500;
+      font-display: swap;
+    }
+    @font-face {
+      font-family: 'SF Pro';
+      src: url('https://sf.abarber.me/SF-Pro-Display-Semibold.otf') format('opentype');
+      font-weight: 600;
+      font-display: swap;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
     html { scroll-behavior: smooth; }
 
     body {
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'Outfit', -apple-system, sans-serif;
+      background: #050505;
+      color: #e8e8e8;
+      font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
       -webkit-font-smoothing: antialiased;
       line-height: 1.6;
       overflow-x: hidden;
     }
 
-    .page { position: relative; z-index: 1; }
-
     .container {
-      max-width: 1080px;
+      max-width: 640px;
       margin: 0 auto;
-      padding: 0 32px;
-    }
-
-    /* ── Ambient canvas ── */
-    #ambient-canvas {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      pointer-events: none; z-index: 0;
+      padding: 0 24px;
     }
 
     /* ── Nav ── */
     nav {
       position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-      padding: 14px 32px;
+      padding: 12px 24px;
       display: flex; justify-content: space-between; align-items: center;
       backdrop-filter: blur(30px) saturate(1.4);
       -webkit-backdrop-filter: blur(30px) saturate(1.4);
       background: rgba(5, 5, 5, 0.7);
-      border-bottom: 1px solid var(--glass-border);
+      border-bottom: 1px solid rgba(255,255,255,0.06);
     }
 
     .nav-logo {
-      display: flex; align-items: center; gap: 10px;
-      text-decoration: none; color: var(--text);
+      display: flex; align-items: center; gap: 8px;
+      text-decoration: none; color: #e8e8e8;
     }
-    .nav-logo img { width: 30px; height: 30px; border-radius: 7px; }
-    .nav-logo span {
-      font-family: 'Be Vietnam Pro', sans-serif; font-weight: 700;
-      font-size: 1rem; letter-spacing: -0.02em;
-    }
+    .nav-logo img { width: 24px; height: 24px; border-radius: 6px; }
+    .nav-logo span { font-weight: 600; font-size: 0.875rem; }
 
-    .nav-links { display: flex; align-items: center; gap: 32px; }
+    .nav-links { display: flex; align-items: center; gap: 24px; }
     .nav-links a {
-      color: var(--text-secondary); text-decoration: none;
-      font-size: 0.85rem; font-weight: 500; transition: color 0.2s;
+      color: rgba(255,255,255,0.4); text-decoration: none;
+      font-size: 0.8rem; font-weight: 500; transition: color 0.2s;
     }
-    .nav-links a:hover { color: var(--text); }
-
+    .nav-links a:hover { color: rgba(255,255,255,0.8); }
     .nav-cta {
-      padding: 7px 18px; background: white;
-      border-radius: 8px; border: none;
-      color: black !important; font-weight: 600 !important;
-      transition: opacity 0.2s;
+      padding: 5px 14px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 6px; border: none;
+      color: rgba(255,255,255,0.8) !important;
+      font-weight: 500 !important;
+      transition: background 0.2s;
     }
-    .nav-cta:hover { opacity: 0.85; }
+    .nav-cta:hover { background: rgba(255,255,255,0.15); }
 
     /* ── Hero ── */
     .hero {
       text-align: center;
-      padding: 150px 0 32px;
-      position: relative;
+      padding: 140px 0 48px;
     }
 
     .hero-icon {
-      width: 96px; height: 96px;
-      border-radius: 22px;
-      margin: 0 auto 32px;
-      animation: fadeUp 0.7s ease both;
-      filter: drop-shadow(0 12px 32px rgba(0,0,0,0.4));
+      width: 64px; height: 64px;
+      border-radius: 16px;
+      margin: 0 auto 24px;
+      animation: fadeUp 0.6s ease both;
+      filter: drop-shadow(0 8px 24px rgba(0,0,0,0.4));
     }
 
     .hero h1 {
-      font-family: 'Be Vietnam Pro', sans-serif;
-      font-size: clamp(3rem, 7.5vw, 5.2rem);
-      font-weight: 800;
-      line-height: 1.0;
-      letter-spacing: -0.045em;
-      margin-bottom: 20px;
-      animation: fadeUp 0.7s ease 0.08s both;
-    }
-    .hero h1 em {
-      font-style: italic;
-      background: linear-gradient(135deg, var(--fig-wine), var(--fig-olive), var(--fig-sand));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      font-size: 1.125rem;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #e8e8e8;
+      animation: fadeUp 0.6s ease 0.06s both;
     }
 
     .hero-sub {
-      font-size: 1.05rem; color: var(--text-secondary);
-      max-width: 400px; margin: 0 auto 36px;
-      font-weight: 400; line-height: 1.7;
-      animation: fadeUp 0.7s ease 0.16s both;
+      font-size: 0.875rem;
+      color: rgba(255,255,255,0.4);
+      max-width: 320px;
+      margin: 0 auto 32px;
+      animation: fadeUp 0.6s ease 0.12s both;
     }
 
     .hero-actions {
-      display: flex; gap: 12px; justify-content: center;
-      flex-wrap: wrap;
-      animation: fadeUp 0.7s ease 0.24s both;
+      display: flex; gap: 8px; justify-content: center;
+      animation: fadeUp 0.6s ease 0.18s both;
     }
 
     @keyframes fadeUp {
-      from { opacity: 0; transform: translateY(16px); }
+      from { opacity: 0; transform: translateY(12px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
     /* ── Buttons ── */
     .btn-primary {
-      display: inline-flex; align-items: center; gap: 10px;
-      padding: 13px 26px; border-radius: 12px;
-      font-size: 0.92rem; font-weight: 600;
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 16px; border-radius: 8px;
+      font-size: 0.8rem; font-weight: 500;
       text-decoration: none; border: none;
-      font-family: 'Outfit', sans-serif;
-      background: white; color: black;
-      transition: all 0.2s;
+      font-family: inherit;
+      background: rgba(255,255,255,0.12); color: #e8e8e8;
+      transition: background 0.2s;
     }
-    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
-    .btn-primary svg { width: 17px; height: 17px; }
+    .btn-primary:hover { background: rgba(255,255,255,0.2); }
+    .btn-primary svg { width: 14px; height: 14px; }
 
     .btn-ghost {
-      display: inline-flex; align-items: center; gap: 8px;
-      padding: 13px 22px; border-radius: 12px;
-      font-size: 0.92rem; font-weight: 500;
-      text-decoration: none;
-      font-family: 'Outfit', sans-serif;
-      color: var(--text-secondary);
-      border: 1px solid var(--glass-border);
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 8px 16px; border-radius: 8px;
+      font-size: 0.8rem; font-weight: 500;
+      text-decoration: none; font-family: inherit;
+      color: rgba(255,255,255,0.4);
+      border: 1px solid rgba(255,255,255,0.06);
       background: transparent;
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
       transition: all 0.2s;
     }
-    .btn-ghost:hover { color: var(--text); border-color: rgba(255,255,255,0.12); }
-    .btn-ghost svg { width: 17px; height: 17px; }
+    .btn-ghost:hover { color: rgba(255,255,255,0.7); border-color: rgba(255,255,255,0.1); }
+    .btn-ghost svg { width: 14px; height: 14px; }
 
-    /* ── Screenshots — scroll-animated fan ── */
+    /* ── Screenshots ── */
     .showcase {
-      position: relative;
-      max-width: 960px;
-      margin: 56px auto 0;
-      animation: fadeUp 0.9s ease 0.4s both;
+      max-width: 800px;
+      margin: 0 auto;
+      animation: fadeUp 0.7s ease 0.3s both;
     }
 
     .showcase-stack {
       position: relative;
       width: 100%;
-      height: 560px;
+      height: 460px;
     }
 
     .showcase-frame {
       position: absolute;
       left: 50%;
       width: 80%;
-      border-radius: 12px;
+      border-radius: 10px;
       overflow: hidden;
-      border: 1px solid rgba(255,255,255,0.06);
-      box-shadow: 0 16px 48px -16px rgba(0,0,0,0.7);
+      border: 1px solid rgba(255,255,255,0.05);
+      box-shadow: 0 12px 40px -12px rgba(0,0,0,0.6);
       will-change: transform, opacity;
-      transition: all 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+      transition: all 0.8s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .showcase-frame img { width: 100%; height: auto; display: block; }
 
@@ -207,26 +185,25 @@
     }
 
     .showcase-stack.fanned .showcase-frame:nth-child(1) {
-      transform: translateX(-56%) translateY(-20px) rotate(-2.5deg) scale(0.91);
-      opacity: 0.8;
+      transform: translateX(-56%) translateY(-16px) rotate(-2deg) scale(0.91);
+      opacity: 0.7;
     }
     .showcase-stack.fanned .showcase-frame:nth-child(2) {
-      transform: translateX(-50%) translateY(155px) rotate(0deg) scale(0.94);
-      opacity: 0.85;
+      transform: translateX(-50%) translateY(130px) rotate(0deg) scale(0.94);
+      opacity: 0.8;
     }
     .showcase-stack.fanned .showcase-frame:nth-child(3) {
-      transform: translateX(-44%) translateY(320px) rotate(2deg) scale(0.91);
-      opacity: 0.8;
+      transform: translateX(-44%) translateY(270px) rotate(1.5deg) scale(0.91);
+      opacity: 0.7;
     }
 
     .showcase-label {
       position: absolute;
-      bottom: -26px; left: 50%; transform: translateX(-50%);
-      font-family: 'Be Vietnam Pro', sans-serif;
-      font-size: 0.65rem; font-weight: 600;
-      letter-spacing: 0.1em; text-transform: uppercase;
-      color: var(--text-tertiary);
-      opacity: 0; transition: opacity 0.5s ease 0.35s;
+      bottom: -22px; left: 50%; transform: translateX(-50%);
+      font-size: 0.6rem; font-weight: 500;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: rgba(255,255,255,0.15);
+      opacity: 0; transition: opacity 0.4s ease 0.3s;
       white-space: nowrap;
     }
     .showcase-stack.fanned .showcase-label { opacity: 1; }
@@ -234,204 +211,157 @@
     /* ── Divider ── */
     .divider {
       width: 100%; height: 1px;
-      background: linear-gradient(90deg, transparent, var(--glass-border), transparent);
-    }
-
-    /* ── Section label ── */
-    .section-label {
-      font-family: 'Be Vietnam Pro', sans-serif;
-      font-size: 0.6rem; font-weight: 700;
-      text-transform: uppercase; letter-spacing: 0.15em;
-      color: rgba(255,255,255,0.25); margin-bottom: 14px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
+      margin: 80px 0;
     }
 
     /* ── Features ── */
-    .features { padding: 110px 0 100px; }
-
     .features-header {
-      text-align: center; margin-bottom: 56px;
+      text-align: center; margin-bottom: 32px;
+    }
+    .section-label {
+      font-size: 0.65rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.1em;
+      color: rgba(255,255,255,0.2); margin-bottom: 8px;
     }
     .features-header h2 {
-      font-family: 'Be Vietnam Pro', sans-serif;
-      font-size: clamp(1.8rem, 3.5vw, 2.6rem);
-      font-weight: 700; letter-spacing: -0.03em;
-      margin-bottom: 10px;
+      font-size: 1.125rem; font-weight: 600; margin-bottom: 4px;
     }
     .features-header p {
-      color: var(--text-secondary); font-size: 0.95rem; font-weight: 400;
+      color: rgba(255,255,255,0.4); font-size: 0.8rem;
     }
 
-    .feature-grid {
-      display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px;
+    .feature-list {
+      display: flex; flex-direction: column; gap: 2px;
     }
 
-    .feature-card {
-      padding: 28px; border-radius: 14px;
-      background: var(--glass);
-      border: 1px solid var(--glass-border);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      transition: all 0.3s;
-      position: relative; overflow: hidden;
+    .feature-item {
+      display: flex; align-items: flex-start; gap: 12px;
+      padding: 12px 16px; border-radius: 8px;
+      transition: background 0.2s;
     }
-    .feature-card:hover {
-      background: var(--glass-hover);
-      border-color: rgba(255,255,255,0.1);
-      transform: translateY(-2px);
+    .feature-item:hover { background: rgba(255,255,255,0.03); }
+
+    .feature-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: rgba(255,255,255,0.2);
+      flex-shrink: 0; margin-top: 7px;
     }
 
-    .feature-icon {
-      width: 36px; height: 36px; border-radius: 9px;
-      display: flex; align-items: center; justify-content: center;
-      margin-bottom: 14px;
+    .feature-item h3 {
+      font-size: 0.8rem; font-weight: 500; margin-bottom: 2px;
     }
-    .fi-wine { background: rgba(124,50,48,0.2); color: rgba(175,90,85,0.9); }
-    .fi-olive { background: rgba(152,130,76,0.18); color: rgba(175,155,95,0.9); }
-    .fi-sand { background: rgba(187,164,123,0.15); color: rgba(200,180,140,0.9); }
-    .fi-mix {
-      background: linear-gradient(135deg, rgba(124,50,48,0.15), rgba(152,130,76,0.12));
-      color: rgba(175,130,90,0.9);
-    }
-
-    .feature-card h3 {
-      font-family: 'Be Vietnam Pro', sans-serif;
-      font-size: 0.95rem; font-weight: 700;
-      margin-bottom: 6px; letter-spacing: -0.01em;
-    }
-    .feature-card p {
-      font-size: 0.85rem; color: var(--text-secondary);
-      line-height: 1.6; font-weight: 400;
+    .feature-item p {
+      font-size: 0.75rem; color: rgba(255,255,255,0.35); line-height: 1.5;
     }
 
     /* ── Platforms ── */
-    .platforms { padding: 90px 0; text-align: center; }
+    .platforms { text-align: center; }
     .platforms h2 {
-      font-family: 'Be Vietnam Pro', sans-serif;
-      font-size: clamp(1.5rem, 3vw, 2rem);
-      font-weight: 700; letter-spacing: -0.03em;
-      margin-bottom: 10px;
+      font-size: 1.125rem; font-weight: 600; margin-bottom: 4px;
     }
-    .platforms > .container > p {
-      color: var(--text-secondary); margin-bottom: 36px; font-weight: 400; font-size: 0.95rem;
+    .platforms > p {
+      color: rgba(255,255,255,0.4); margin-bottom: 24px; font-size: 0.8rem;
     }
     .platform-row {
-      display: flex; gap: 12px; justify-content: center; flex-wrap: wrap;
+      display: flex; gap: 8px; justify-content: center; flex-wrap: wrap;
     }
     .platform-chip {
-      display: flex; align-items: center; gap: 10px;
-      padding: 12px 22px; border-radius: 10px;
-      background: var(--glass); border: 1px solid var(--glass-border);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      font-size: 0.88rem; font-weight: 600; color: var(--text);
-      transition: all 0.2s;
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 16px; border-radius: 8px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
+      font-size: 0.8rem; font-weight: 500; color: rgba(255,255,255,0.6);
+      transition: background 0.2s;
     }
-    .platform-chip:hover { background: var(--glass-hover); }
-    .platform-chip .dot { width: 7px; height: 7px; border-radius: 50%; }
-    .platform-chip .coming { color: var(--text-tertiary); font-weight: 400; font-size: 0.82rem; }
+    .platform-chip:hover { background: rgba(255,255,255,0.05); }
+    .platform-chip .dot { width: 5px; height: 5px; border-radius: 50%; }
+    .platform-chip .coming { color: rgba(255,255,255,0.2); font-weight: 400; }
 
     /* ── Install ── */
-    .install { padding: 90px 0; }
-    .install-inner { max-width: 500px; margin: 0 auto; }
-    .install-header { text-align: center; margin-bottom: 40px; }
-    .install-header h2 {
-      font-family: 'Be Vietnam Pro', sans-serif;
-      font-size: clamp(1.5rem, 3vw, 2rem);
-      font-weight: 700; letter-spacing: -0.03em; margin-bottom: 8px;
-    }
-    .install-header p { color: var(--text-secondary); font-weight: 400; font-size: 0.92rem; }
+    .install-header { text-align: center; margin-bottom: 24px; }
+    .install-header h2 { font-size: 1.125rem; font-weight: 600; margin-bottom: 4px; }
+    .install-header p { color: rgba(255,255,255,0.4); font-size: 0.8rem; }
 
     .steps { list-style: none; display: flex; flex-direction: column; gap: 2px; }
     .step {
-      display: flex; gap: 14px; align-items: flex-start;
-      padding: 14px 18px; border-radius: 10px; transition: background 0.2s;
+      display: flex; gap: 12px; align-items: flex-start;
+      padding: 10px 16px; border-radius: 8px; transition: background 0.2s;
     }
-    .step:hover { background: var(--glass); }
-
+    .step:hover { background: rgba(255,255,255,0.03); }
     .step-num {
-      width: 26px; height: 26px; border-radius: 7px;
+      width: 22px; height: 22px; border-radius: 6px;
       display: flex; align-items: center; justify-content: center;
-      font-size: 0.7rem; font-weight: 800; flex-shrink: 0;
-      background: var(--glass-hover); color: rgba(255,255,255,0.35);
-      font-family: 'Be Vietnam Pro', sans-serif;
-      border: 1px solid var(--glass-border);
+      font-size: 0.65rem; font-weight: 600; flex-shrink: 0;
+      background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.3);
+      border: 1px solid rgba(255,255,255,0.06);
     }
     .step-text {
-      padding-top: 2px; font-size: 0.88rem;
-      color: var(--text-secondary); font-weight: 400; line-height: 1.5;
+      padding-top: 1px; font-size: 0.8rem;
+      color: rgba(255,255,255,0.4); line-height: 1.5;
     }
     .step-text code {
-      background: rgba(255,255,255,0.05); padding: 2px 6px;
-      border-radius: 4px; font-size: 0.8em;
-      border: 1px solid var(--glass-border);
+      background: rgba(255,255,255,0.05); padding: 1px 5px;
+      border-radius: 4px; font-size: 0.85em;
+      border: 1px solid rgba(255,255,255,0.06);
       font-family: 'SF Mono', 'Fira Code', monospace;
     }
+    .step-text strong { color: rgba(255,255,255,0.6); font-weight: 500; }
 
     /* ── CTA ── */
-    .cta { text-align: center; padding: 90px 0 70px; }
-    .cta-glass {
-      padding: 56px 36px; border-radius: 18px;
-      background: var(--glass); border: 1px solid var(--glass-border);
-      backdrop-filter: blur(24px);
-      -webkit-backdrop-filter: blur(24px);
-      position: relative; overflow: hidden;
+    .cta { text-align: center; padding-bottom: 80px; }
+    .cta-box {
+      padding: 40px 24px; border-radius: 12px;
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.06);
     }
     .cta-icon {
-      width: 56px; height: 56px; border-radius: 14px;
-      margin: 0 auto 20px;
-      filter: drop-shadow(0 6px 16px rgba(0,0,0,0.3));
+      width: 40px; height: 40px; border-radius: 10px;
+      margin: 0 auto 16px;
+      filter: drop-shadow(0 4px 12px rgba(0,0,0,0.3));
     }
     .cta h2 {
-      font-family: 'Be Vietnam Pro', sans-serif;
-      font-size: clamp(1.6rem, 3.5vw, 2.2rem);
-      font-weight: 700; letter-spacing: -0.03em; margin-bottom: 10px;
+      font-size: 1.125rem; font-weight: 600; margin-bottom: 4px;
     }
     .cta p {
-      color: var(--text-secondary); margin-bottom: 28px;
-      font-weight: 400; font-size: 0.95rem;
+      color: rgba(255,255,255,0.4); margin-bottom: 20px; font-size: 0.8rem;
     }
 
     /* ── Footer ── */
     footer {
-      text-align: center; padding: 28px 0;
-      border-top: 1px solid var(--glass-border);
-      color: var(--text-tertiary); font-size: 0.78rem; font-weight: 400;
+      text-align: center; padding: 20px 0;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      color: rgba(255,255,255,0.15); font-size: 0.7rem;
     }
     footer a {
-      color: var(--text-secondary); text-decoration: none; transition: color 0.2s;
+      color: rgba(255,255,255,0.3); text-decoration: none; transition: color 0.2s;
     }
-    footer a:hover { color: var(--text); }
+    footer a:hover { color: rgba(255,255,255,0.6); }
 
     /* ── Responsive ── */
-    @media (max-width: 768px) {
-      nav { padding: 12px 20px; }
+    @media (max-width: 640px) {
+      nav { padding: 10px 16px; }
       .nav-links a:not(.nav-cta) { display: none; }
-      .hero { padding: 120px 0 28px; }
-      .hero-icon { width: 72px; height: 72px; }
-      .feature-grid { grid-template-columns: 1fr; }
-      .cta-glass { padding: 36px 20px; }
-      .showcase-stack { height: 380px; }
+      .hero { padding: 110px 0 36px; }
+      .hero-icon { width: 48px; height: 48px; }
+      .showcase-stack { height: 300px; }
       .showcase-stack.fanned .showcase-frame:nth-child(2) {
-        transform: translateX(-50%) translateY(110px) rotate(0deg) scale(0.94);
+        transform: translateX(-50%) translateY(90px) rotate(0deg) scale(0.94);
       }
       .showcase-stack.fanned .showcase-frame:nth-child(3) {
-        transform: translateX(-44%) translateY(210px) rotate(2deg) scale(0.91);
+        transform: translateX(-44%) translateY(175px) rotate(1.5deg) scale(0.91);
       }
-      .orb { filter: blur(90px); }
     }
 
     /* ── Scroll reveal ── */
     .reveal {
-      opacity: 0; transform: translateY(20px);
-      transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      opacity: 0; transform: translateY(14px);
+      transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
     }
     .reveal.visible { opacity: 1; transform: translateY(0); }
   </style>
 </head>
 <body>
-  <!-- Ambient interactive canvas -->
-  <canvas id="ambient-canvas"></canvas>
-
   <div class="page">
     <nav>
       <a href="#" class="nav-logo">
@@ -449,7 +379,7 @@
     <div class="container">
       <section class="hero">
         <img src="icon.png" alt="myOS" class="hero-icon">
-        <h1>One inbox for<br><em>everything</em></h1>
+        <h1>One inbox for everything</h1>
         <p class="hero-sub">iMessage and Gmail in one app. AI digest keeps you focused on what matters.</p>
         <div class="hero-actions">
           <a href="#" class="btn-primary" id="download-btn">
@@ -458,7 +388,7 @@
           </a>
           <a href="https://github.com/phobopan/myOS" target="_blank" rel="noopener" class="btn-ghost">
             <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
-            View source
+            Source
           </a>
         </div>
       </section>
@@ -467,57 +397,57 @@
       <div class="showcase">
         <div class="showcase-stack" id="showcase-stack">
           <div class="showcase-frame">
-            <img src="dashboard.png" alt="myOS Pinned Dashboard">
+            <img src="dashboard.png" alt="Dashboard">
             <span class="showcase-label">Dashboard</span>
           </div>
           <div class="showcase-frame">
-            <img src="digest.png" alt="myOS Daily Digest">
-            <span class="showcase-label">Daily Digest</span>
+            <img src="digest.png" alt="Daily Digest">
+            <span class="showcase-label">Digest</span>
           </div>
           <div class="showcase-frame">
-            <img src="screenshot.png" alt="myOS Unified Inbox">
+            <img src="screenshot.png" alt="Inbox">
             <span class="showcase-label">Inbox</span>
           </div>
         </div>
       </div>
 
-      <div class="divider" style="margin-top: 100px;"></div>
+      <div class="divider"></div>
 
       <!-- Features -->
-      <section class="features" id="features">
-        <div class="features-header reveal">
+      <section id="features" class="reveal">
+        <div class="features-header">
           <div class="section-label">Features</div>
           <h2>Everything, unified</h2>
-          <p>Stop switching between apps. Start focusing on people.</p>
+          <p>Stop switching between apps.</p>
         </div>
-        <div class="feature-grid">
-          <div class="feature-card reveal">
-            <div class="feature-icon fi-wine">
-              <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"/></svg>
+        <div class="feature-list">
+          <div class="feature-item">
+            <div class="feature-dot"></div>
+            <div>
+              <h3>Unified Inbox</h3>
+              <p>iMessage and Gmail in a single timeline. No more tab switching.</p>
             </div>
-            <h3>Unified Inbox</h3>
-            <p>iMessage and Gmail in a single, chronologically sorted timeline. No more tab switching.</p>
           </div>
-          <div class="feature-card reveal">
-            <div class="feature-icon fi-olive">
-              <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z"/></svg>
+          <div class="feature-item">
+            <div class="feature-dot"></div>
+            <div>
+              <h3>AI Digest</h3>
+              <p>AI-generated summary of what needs your attention. Claude, OpenAI, or Gemini.</p>
             </div>
-            <h3>AI Digest</h3>
-            <p>AI-generated summary of what needs your attention. Choose Claude, OpenAI, or Gemini.</p>
           </div>
-          <div class="feature-card reveal">
-            <div class="feature-icon fi-sand">
-              <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z"/><path d="M6 6h.008v.008H6V6z"/></svg>
+          <div class="feature-item">
+            <div class="feature-dot"></div>
+            <div>
+              <h3>Smart Organization</h3>
+              <p>Tags, priority tiers, and filters. Find any conversation instantly.</p>
             </div>
-            <h3>Smart Organization</h3>
-            <p>Tags, priority tiers, contact clusters, and filters. Find any conversation instantly.</p>
           </div>
-          <div class="feature-card reveal">
-            <div class="feature-icon fi-mix">
-              <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z"/></svg>
+          <div class="feature-item">
+            <div class="feature-dot"></div>
+            <div>
+              <h3>Pinned Dashboard</h3>
+              <p>Pin conversations to a spatial canvas. Organize into clusters.</p>
             </div>
-            <h3>Pinned Dashboard</h3>
-            <p>Pin conversations to a spatial canvas. Organize into clusters with live previews.</p>
           </div>
         </div>
       </section>
@@ -526,23 +456,21 @@
 
       <!-- Platforms -->
       <section class="platforms reveal">
-        <div class="container">
-          <div class="section-label">Integrations</div>
-          <h2>Connects to what you use</h2>
-          <p>More platforms coming soon.</p>
-          <div class="platform-row">
-            <div class="platform-chip">
-              <span class="dot" style="background: var(--fig-olive); opacity: 0.8;"></span>
-              iMessage
-            </div>
-            <div class="platform-chip">
-              <span class="dot" style="background: var(--fig-wine); opacity: 0.8;"></span>
-              Gmail
-            </div>
-            <div class="platform-chip">
-              <span class="dot" style="background: rgba(255,255,255,0.1);"></span>
-              <span class="coming">More coming soon</span>
-            </div>
+        <div class="section-label">Integrations</div>
+        <h2>Connects to what you use</h2>
+        <p>More platforms coming soon.</p>
+        <div class="platform-row">
+          <div class="platform-chip">
+            <span class="dot" style="background: rgba(255,255,255,0.3);"></span>
+            iMessage
+          </div>
+          <div class="platform-chip">
+            <span class="dot" style="background: rgba(255,255,255,0.3);"></span>
+            Gmail
+          </div>
+          <div class="platform-chip">
+            <span class="dot" style="background: rgba(255,255,255,0.08);"></span>
+            <span class="coming">More coming soon</span>
           </div>
         </div>
       </section>
@@ -550,42 +478,40 @@
       <div class="divider"></div>
 
       <!-- Install -->
-      <section class="install reveal" id="install">
-        <div class="install-inner">
-          <div class="install-header">
-            <div class="section-label">Setup</div>
-            <h2>Up and running in two minutes</h2>
-            <p>Requires macOS with Apple Silicon (M1 or later).</p>
-          </div>
-          <ul class="steps">
-            <li class="step">
-              <span class="step-num">1</span>
-              <span class="step-text">Download the DMG from GitHub Releases.</span>
-            </li>
-            <li class="step">
-              <span class="step-num">2</span>
-              <span class="step-text">Open the DMG and drag <strong>myOS</strong> to your Applications folder.</span>
-            </li>
-            <li class="step">
-              <span class="step-num">3</span>
-              <span class="step-text">Right-click the app and select <code>Open</code> — required on first launch for unsigned apps.</span>
-            </li>
-            <li class="step">
-              <span class="step-num">4</span>
-              <span class="step-text">Grant <strong>Full Disk Access</strong> when prompted to enable iMessage reading.</span>
-            </li>
-          </ul>
+      <section class="reveal" id="install">
+        <div class="install-header">
+          <div class="section-label">Setup</div>
+          <h2>Up and running in two minutes</h2>
+          <p>Requires macOS with Apple Silicon (M1+).</p>
         </div>
+        <ul class="steps">
+          <li class="step">
+            <span class="step-num">1</span>
+            <span class="step-text">Download the DMG from GitHub Releases.</span>
+          </li>
+          <li class="step">
+            <span class="step-num">2</span>
+            <span class="step-text">Open the DMG and drag <strong>myOS</strong> to Applications.</span>
+          </li>
+          <li class="step">
+            <span class="step-num">3</span>
+            <span class="step-text">Right-click the app and select <code>Open</code> on first launch.</span>
+          </li>
+          <li class="step">
+            <span class="step-num">4</span>
+            <span class="step-text">Grant <strong>Full Disk Access</strong> when prompted for iMessage.</span>
+          </li>
+        </ul>
       </section>
 
       <div class="divider"></div>
 
       <!-- CTA -->
       <section class="cta reveal">
-        <div class="cta-glass">
+        <div class="cta-box">
           <img src="icon.png" alt="myOS" class="cta-icon">
           <h2>Ready to unify your inbox?</h2>
-          <p>Download myOS for free. Open source, always.</p>
+          <p>Free and open source.</p>
           <a href="#" class="btn-primary" id="download-cta">
             <svg fill="currentColor" viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
             Download for Mac
@@ -608,6 +534,7 @@
     document.getElementById('download-cta').href = releaseUrl;
     document.getElementById('nav-dl').href = releaseUrl;
 
+    // Showcase fan
     const stack = document.getElementById('showcase-stack');
     const showcaseObs = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
@@ -620,77 +547,7 @@
     }, { threshold: 0.25 });
     showcaseObs.observe(stack);
 
-    // ── Interactive ambient lights ──
-    const canvas = document.getElementById('ambient-canvas');
-    const ctx = canvas.getContext('2d');
-    let W, H;
-    let mouseX = 0, mouseY = 0;
-    let scrollY = 0;
-
-    function resize() {
-      W = canvas.width = window.innerWidth;
-      H = canvas.height = window.innerHeight;
-    }
-    resize();
-    window.addEventListener('resize', resize);
-    window.addEventListener('mousemove', e => { mouseX = e.clientX; mouseY = e.clientY; });
-    window.addEventListener('scroll', () => { scrollY = window.scrollY; });
-
-    const blobs = [
-      { x: 0.15, y: 0.12, vx: 0.3, vy: 0.2, r: 350, color: [124, 50, 48], pull: 0.08 },    // wine
-      { x: 0.8, y: 0.2, vx: -0.25, vy: 0.35, r: 320, color: [152, 130, 76], pull: 0.06 },   // olive
-      { x: 0.5, y: 0.5, vx: 0.2, vy: -0.3, r: 360, color: [187, 164, 123], pull: 0.07 },    // sand
-      { x: 0.2, y: 0.75, vx: -0.35, vy: -0.15, r: 300, color: [152, 130, 76], pull: 0.05 }, // olive
-      { x: 0.75, y: 0.7, vx: 0.15, vy: 0.25, r: 330, color: [124, 50, 48], pull: 0.06 },    // wine
-      { x: 0.45, y: 0.3, vx: -0.2, vy: 0.3, r: 280, color: [187, 164, 123], pull: 0.05 },   // sand
-    ];
-
-    // Initialize actual positions
-    blobs.forEach(b => {
-      b.px = b.x * W;
-      b.py = b.y * H;
-      b.angle = Math.random() * Math.PI * 2;
-      b.orbitSpeed = (0.2 + Math.random() * 0.3) * (Math.random() < 0.5 ? 1 : -1);
-      b.orbitRadius = 80 + Math.random() * 120;
-    });
-
-    let time = 0;
-    function animate() {
-      time += 0.008;
-      ctx.clearRect(0, 0, W, H);
-
-      blobs.forEach(b => {
-        // Swirling orbit motion
-        b.angle += b.orbitSpeed * 0.01;
-        const baseX = b.x * W + Math.cos(b.angle + time * 0.5) * b.orbitRadius;
-        const baseY = b.y * H + Math.sin(b.angle * 1.3 + time * 0.4) * b.orbitRadius * 0.7;
-
-        // Pull toward mouse
-        const dx = mouseX - b.px;
-        const dy = mouseY - b.py;
-        const targetX = baseX + dx * b.pull;
-        const targetY = baseY + dy * b.pull;
-
-        // Smooth interpolation
-        b.px += (targetX - b.px) * 0.015;
-        b.py += (targetY - b.py) * 0.015;
-
-        // Draw radial gradient blob
-        const grad = ctx.createRadialGradient(b.px, b.py, 0, b.px, b.py, b.r);
-        const [r, g, bl] = b.color;
-        grad.addColorStop(0, `rgba(${r}, ${g}, ${bl}, 0.3)`);
-        grad.addColorStop(0.4, `rgba(${r}, ${g}, ${bl}, 0.14)`);
-        grad.addColorStop(1, `rgba(${r}, ${g}, ${bl}, 0)`);
-        ctx.fillStyle = grad;
-        ctx.beginPath();
-        ctx.arc(b.px, b.py, b.r, 0, Math.PI * 2);
-        ctx.fill();
-      });
-
-      requestAnimationFrame(animate);
-    }
-    animate();
-
+    // Scroll reveal
     const revealObs = new IntersectionObserver((entries) => {
       entries.forEach(entry => {
         if (entry.isIntersecting) {
