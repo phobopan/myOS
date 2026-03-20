@@ -307,6 +307,23 @@
       font-family: 'SF Mono', 'Fira Code', monospace;
     }
     .step-text strong { color: rgba(255,255,255,0.6); font-weight: 500; }
+    .terminal-block {
+      display: block; margin-top: 8px; padding: 10px 14px;
+      background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 8px; font-family: 'SF Mono', 'Fira Code', monospace;
+      font-size: 0.75rem; color: rgba(255,255,255,0.5); line-height: 1.6;
+      white-space: nowrap; overflow-x: auto; position: relative;
+      cursor: pointer; transition: border-color 0.2s;
+    }
+    .terminal-block:hover { border-color: rgba(255,255,255,0.12); }
+    .terminal-block .prompt { color: rgba(255,255,255,0.25); user-select: none; }
+    .terminal-block .cmd { color: rgba(255,255,255,0.7); }
+    .terminal-block .copy-hint {
+      position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+      font-size: 0.6rem; color: rgba(255,255,255,0.15); font-family: 'SF Pro', sans-serif;
+      transition: color 0.2s;
+    }
+    .terminal-block:hover .copy-hint { color: rgba(255,255,255,0.3); }
 
     /* ── CTA ── */
     .cta { text-align: center; padding-bottom: 80px; }
@@ -491,7 +508,12 @@
           </li>
           <li class="step">
             <span class="step-num">2</span>
-            <span class="step-text">If macOS says the app is "damaged", open Terminal and run:<br><code>xattr -cr /Applications/myOS.app</code></span>
+            <span class="step-text">If macOS says the app is "damaged", open Terminal and run:
+              <span class="terminal-block" onclick="navigator.clipboard.writeText('xattr -cr /Applications/myOS.app').then(()=>{this.querySelector('.copy-hint').textContent='Copied!'})">
+                <span class="prompt">$ </span><span class="cmd">xattr -cr /Applications/myOS.app</span>
+                <span class="copy-hint">Click to copy</span>
+              </span>
+            </span>
           </li>
           <li class="step">
             <span class="step-num">3</span>
@@ -499,7 +521,7 @@
           </li>
           <li class="step">
             <span class="step-num">4</span>
-            <span class="step-text">Sign in to Gmail during setup. You're all set.</span>
+            <span class="step-text">Sign in to <strong>Gmail</strong> and connect an <strong>AI provider</strong> (Claude, OpenAI, or Gemini) during setup for the daily digest.</span>
           </li>
         </ul>
       </section>
