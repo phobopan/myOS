@@ -1,0 +1,29 @@
+<svg viewBox="0 0 512 512" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="512" y2="512">
+      <stop offset="0%" stop-color="#1a1a2e"/>
+      <stop offset="100%" stop-color="#0d0d1a"/>
+    </linearGradient>
+    <linearGradient id="g1" x1="64" y1="96" x2="448" y2="448">
+      <stop offset="0%" stop-color="#6e8eff"/>
+      <stop offset="100%" stop-color="#a78bfa"/>
+    </linearGradient>
+    <linearGradient id="g2" x1="96" y1="128" x2="416" y2="384">
+      <stop offset="0%" stop-color="#6e8eff" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#a78bfa" stop-opacity="0.25"/>
+    </linearGradient>
+  </defs>
+  <!-- Background rounded square -->
+  <rect width="512" height="512" rx="112" fill="url(#bg)"/>
+  <!-- Subtle border -->
+  <rect x="1" y="1" width="510" height="510" rx="111" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="2"/>
+  <!-- Back pane -->
+  <rect x="96" y="112" width="352" height="264" rx="40" fill="url(#g2)" stroke="rgba(255,255,255,0.15)" stroke-width="2"/>
+  <!-- Front pane -->
+  <rect x="64" y="160" width="352" height="264" rx="40" fill="url(#g1)" stroke="rgba(255,255,255,0.2)" stroke-width="2"/>
+  <!-- Envelope flap -->
+  <path d="M96 208 L240 320 L384 208" stroke="white" stroke-width="16" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.9"/>
+  <!-- Notification dot -->
+  <circle cx="400" cy="160" r="40" fill="#5eead4"/>
+  <circle cx="400" cy="160" r="40" fill="#5eead4" opacity="0.3"/>
+</svg>

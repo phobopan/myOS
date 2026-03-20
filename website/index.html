@@ -3,398 +3,943 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>myOS - Your Unified Inbox</title>
+  <title>myOS — Your Unified Inbox</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #0a0a0f;
-      --surface: rgba(255, 255, 255, 0.05);
-      --border: rgba(255, 255, 255, 0.1);
-      --text: #e5e5e5;
-      --text-muted: rgba(255, 255, 255, 0.5);
-      --accent: #3b82f6;
-      --accent-hover: #2563eb;
+      --bg: #06060b;
+      --surface: rgba(255, 255, 255, 0.04);
+      --glass: rgba(255, 255, 255, 0.06);
+      --glass-border: rgba(255, 255, 255, 0.08);
+      --glass-strong: rgba(255, 255, 255, 0.1);
+      --text: #f0f0f5;
+      --text-secondary: rgba(255, 255, 255, 0.55);
+      --text-tertiary: rgba(255, 255, 255, 0.3);
+      --accent: #6e8eff;
+      --accent-soft: rgba(110, 142, 255, 0.15);
+      --violet: #a78bfa;
+      --teal: #5eead4;
+      --rose: #fb7185;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
+    html { scroll-behavior: smooth; }
+
     body {
       background: var(--bg);
       color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      font-family: 'DM Sans', -apple-system, sans-serif;
       -webkit-font-smoothing: antialiased;
       line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ── Ambient background ── */
+    .ambient {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .ambient .orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(120px);
+      opacity: 0.35;
+      animation: float 20s ease-in-out infinite;
+    }
+
+    .ambient .orb-1 {
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, #4f46e5, transparent 70%);
+      top: -10%; left: -5%;
+      animation-delay: 0s;
+    }
+
+    .ambient .orb-2 {
+      width: 500px; height: 500px;
+      background: radial-gradient(circle, #0ea5e9, transparent 70%);
+      top: 30%; right: -10%;
+      animation-delay: -7s;
+      animation-duration: 25s;
+    }
+
+    .ambient .orb-3 {
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, #8b5cf6, transparent 70%);
+      bottom: 10%; left: 20%;
+      animation-delay: -14s;
+      animation-duration: 22s;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translate(0, 0) scale(1); }
+      33% { transform: translate(30px, -40px) scale(1.05); }
+      66% { transform: translate(-20px, 20px) scale(0.95); }
+    }
+
+    /* ── Noise texture overlay ── */
+    .noise {
+      position: fixed;
+      inset: 0;
+      z-index: 1;
+      pointer-events: none;
+      opacity: 0.03;
+      background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+      background-repeat: repeat;
+      background-size: 256px;
+    }
+
+    /* ── Layout ── */
+    .page {
+      position: relative;
+      z-index: 2;
     }
 
     .container {
-      max-width: 960px;
+      max-width: 1100px;
       margin: 0 auto;
-      padding: 0 24px;
+      padding: 0 32px;
     }
 
-    /* Hero */
-    .hero {
-      text-align: center;
-      padding: 120px 0 80px;
+    /* ── Nav ── */
+    nav {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      z-index: 100;
+      padding: 16px 32px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      backdrop-filter: blur(20px) saturate(1.4);
+      -webkit-backdrop-filter: blur(20px) saturate(1.4);
+      background: rgba(6, 6, 11, 0.7);
+      border-bottom: 1px solid var(--glass-border);
     }
 
-    .hero h1 {
-      font-size: 3.5rem;
-      font-weight: 700;
-      margin-bottom: 16px;
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--text);
+    }
+
+    .nav-logo svg {
+      width: 32px;
+      height: 32px;
+    }
+
+    .nav-logo span {
+      font-weight: 600;
+      font-size: 1.1rem;
       letter-spacing: -0.02em;
     }
 
-    .hero h1 span {
-      background: linear-gradient(135deg, #3b82f6, #8b5cf6);
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 32px;
+    }
+
+    .nav-links a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 400;
+      transition: color 0.2s;
+    }
+
+    .nav-links a:hover { color: var(--text); }
+
+    .nav-cta {
+      padding: 8px 20px;
+      background: var(--glass-strong);
+      border: 1px solid var(--glass-border);
+      border-radius: 10px;
+      color: var(--text) !important;
+      font-weight: 500 !important;
+      backdrop-filter: blur(10px);
+      transition: all 0.2s;
+    }
+
+    .nav-cta:hover {
+      background: rgba(255, 255, 255, 0.15) !important;
+      border-color: rgba(255, 255, 255, 0.2);
+    }
+
+    /* ── Hero ── */
+    .hero {
+      text-align: center;
+      padding: 180px 0 60px;
+      position: relative;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 16px;
+      background: var(--accent-soft);
+      border: 1px solid rgba(110, 142, 255, 0.2);
+      border-radius: 100px;
+      font-size: 0.8rem;
+      color: var(--accent);
+      font-weight: 500;
+      margin-bottom: 32px;
+      animation: fadeUp 0.8s ease both;
+    }
+
+    .hero-badge .pulse {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+      animation: pulse 2s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.5); }
+    }
+
+    .hero h1 {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-size: clamp(3.5rem, 8vw, 6rem);
+      font-weight: 400;
+      line-height: 1.05;
+      letter-spacing: -0.03em;
+      margin-bottom: 24px;
+      animation: fadeUp 0.8s ease 0.1s both;
+    }
+
+    .hero h1 em {
+      font-style: italic;
+      background: linear-gradient(135deg, var(--accent), var(--violet));
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
     }
 
-    .hero p {
-      font-size: 1.25rem;
-      color: var(--text-muted);
-      max-width: 520px;
-      margin: 0 auto 40px;
+    .hero-sub {
+      font-size: 1.2rem;
+      color: var(--text-secondary);
+      max-width: 480px;
+      margin: 0 auto 48px;
+      font-weight: 300;
+      line-height: 1.7;
+      animation: fadeUp 0.8s ease 0.2s both;
     }
 
-    .download-buttons {
+    .hero-actions {
       display: flex;
-      gap: 12px;
+      gap: 16px;
       justify-content: center;
+      align-items: center;
       flex-wrap: wrap;
+      animation: fadeUp 0.8s ease 0.3s both;
     }
 
-    .btn {
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ── Buttons ── */
+    .btn-dl {
       display: inline-flex;
       align-items: center;
-      gap: 8px;
-      padding: 14px 28px;
-      border-radius: 12px;
+      gap: 10px;
+      padding: 16px 32px;
+      border-radius: 14px;
       font-size: 1rem;
       font-weight: 600;
       text-decoration: none;
-      transition: all 0.2s;
-    }
-
-    .btn-primary {
-      background: var(--accent);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(135deg, #4f46e5, #6e8eff);
       color: white;
+      border: none;
+      box-shadow: 0 0 0 1px rgba(110, 142, 255, 0.3),
+                  0 8px 32px -8px rgba(79, 70, 229, 0.5);
     }
 
-    .btn-primary:hover {
-      background: var(--accent-hover);
-      transform: translateY(-1px);
+    .btn-dl:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0 0 1px rgba(110, 142, 255, 0.5),
+                  0 16px 48px -8px rgba(79, 70, 229, 0.6);
     }
 
-    .btn-secondary {
-      background: var(--surface);
+    .btn-dl svg { width: 20px; height: 20px; }
+
+    .btn-ghost {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 16px 28px;
+      border-radius: 14px;
+      font-size: 1rem;
+      font-weight: 500;
+      text-decoration: none;
+      color: var(--text-secondary);
+      border: 1px solid var(--glass-border);
+      background: var(--glass);
+      backdrop-filter: blur(10px);
+      transition: all 0.3s;
+    }
+
+    .btn-ghost:hover {
       color: var(--text);
-      border: 1px solid var(--border);
+      background: var(--glass-strong);
+      border-color: rgba(255, 255, 255, 0.15);
     }
 
-    .btn-secondary:hover {
-      background: rgba(255, 255, 255, 0.1);
+    .btn-ghost svg {
+      width: 18px;
+      height: 18px;
     }
 
-    .btn svg {
-      width: 20px;
-      height: 20px;
+    /* ── Screenshot showcase ── */
+    .showcase {
+      position: relative;
+      max-width: 960px;
+      margin: 80px auto 0;
+      perspective: 1200px;
+      animation: fadeUp 1s ease 0.5s both;
     }
 
-    /* Screenshot placeholder */
-    .screenshot {
-      margin: 60px auto;
-      max-width: 800px;
-      aspect-ratio: 16/10;
-      background: var(--surface);
-      border: 1px solid var(--border);
+    .showcase-stack {
+      position: relative;
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      padding-bottom: 40px;
+    }
+
+    .showcase-frame {
+      position: relative;
+      width: 85%;
       border-radius: 16px;
+      overflow: hidden;
+      border: 1px solid var(--glass-border);
+      box-shadow:
+        0 0 0 1px rgba(255, 255, 255, 0.05),
+        0 32px 80px -20px rgba(0, 0, 0, 0.8),
+        0 0 120px -40px rgba(79, 70, 229, 0.2);
+      transform: rotateX(4deg) rotateY(0deg);
+      transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      background: var(--surface);
+    }
+
+    .showcase-frame:hover {
+      transform: rotateX(0deg) rotateY(0deg);
+    }
+
+    .showcase-frame img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .showcase-placeholder {
+      aspect-ratio: 16/10;
       display: flex;
       align-items: center;
       justify-content: center;
-      color: var(--text-muted);
-      font-size: 0.875rem;
+      color: var(--text-tertiary);
+      font-size: 0.9rem;
+      background: linear-gradient(145deg, rgba(255,255,255,0.03), rgba(255,255,255,0.01));
     }
 
-    /* Features */
+    /* Glass reflection line on screenshot */
+    .showcase-frame::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -50%;
+      width: 200%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+    }
+
+    /* ── Section label ── */
+    .section-label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--accent);
+      margin-bottom: 20px;
+    }
+
+    .section-label::before {
+      content: '';
+      width: 20px;
+      height: 1px;
+      background: var(--accent);
+    }
+
+    /* ── Features ── */
     .features {
-      padding: 80px 0;
+      padding: 140px 0 100px;
     }
 
-    .features h2 {
+    .features-header {
       text-align: center;
-      font-size: 2rem;
-      margin-bottom: 48px;
+      margin-bottom: 72px;
+    }
+
+    .features-header h2 {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-size: clamp(2rem, 4vw, 3rem);
+      font-weight: 400;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+    }
+
+    .features-header p {
+      color: var(--text-secondary);
+      font-size: 1.1rem;
+      font-weight: 300;
     }
 
     .feature-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-      gap: 24px;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 20px;
     }
 
     .feature-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 28px;
+      position: relative;
+      padding: 36px;
+      border-radius: 20px;
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      overflow: hidden;
     }
 
-    .feature-card .icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+    }
+
+    .feature-card:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: rgba(255, 255, 255, 0.12);
+      transform: translateY(-4px);
+      box-shadow: 0 24px 64px -16px rgba(0, 0, 0, 0.5);
+    }
+
+    .feature-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
       display: flex;
       align-items: center;
       justify-content: center;
-      margin-bottom: 16px;
-      font-size: 1.25rem;
+      margin-bottom: 20px;
+      font-size: 1.3rem;
+      position: relative;
     }
 
     .feature-card h3 {
-      font-size: 1.1rem;
-      margin-bottom: 8px;
+      font-size: 1.15rem;
+      font-weight: 600;
+      margin-bottom: 10px;
+      letter-spacing: -0.01em;
     }
 
     .feature-card p {
-      font-size: 0.875rem;
-      color: var(--text-muted);
-      line-height: 1.5;
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+      font-weight: 300;
     }
 
-    /* Platforms */
+    /* ── Platforms ── */
     .platforms {
+      padding: 100px 0;
       text-align: center;
-      padding: 60px 0;
-      border-top: 1px solid var(--border);
     }
 
     .platforms h2 {
-      font-size: 1.5rem;
-      margin-bottom: 12px;
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-size: clamp(1.8rem, 3.5vw, 2.5rem);
+      font-weight: 400;
+      margin-bottom: 16px;
     }
 
-    .platforms p {
-      color: var(--text-muted);
-      margin-bottom: 32px;
+    .platforms > .container > p {
+      color: var(--text-secondary);
+      margin-bottom: 48px;
+      font-weight: 300;
     }
 
-    .platform-icons {
+    .platform-row {
       display: flex;
-      gap: 40px;
+      gap: 24px;
       justify-content: center;
-      align-items: center;
       flex-wrap: wrap;
     }
 
-    .platform-icons span {
+    .platform-chip {
       display: flex;
       align-items: center;
-      gap: 8px;
-      font-size: 1rem;
-      color: var(--text-muted);
+      gap: 12px;
+      padding: 16px 28px;
+      border-radius: 16px;
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(10px);
+      font-size: 0.95rem;
+      font-weight: 500;
+      color: var(--text);
+      transition: all 0.3s;
     }
 
-    .platform-icons .dot {
+    .platform-chip:hover {
+      background: var(--glass-strong);
+      transform: translateY(-2px);
+    }
+
+    .platform-chip .dot {
       width: 10px;
       height: 10px;
       border-radius: 50%;
     }
 
-    /* Install guide */
+    .platform-chip .coming {
+      color: var(--text-tertiary);
+      font-weight: 300;
+      font-size: 0.85rem;
+    }
+
+    /* ── Install steps ── */
     .install {
-      padding: 60px 0;
-      border-top: 1px solid var(--border);
+      padding: 100px 0;
     }
 
-    .install h2 {
-      text-align: center;
-      font-size: 1.5rem;
-      margin-bottom: 24px;
-    }
-
-    .install-steps {
-      max-width: 500px;
+    .install-inner {
+      max-width: 580px;
       margin: 0 auto;
     }
 
-    .install-steps li {
-      list-style: none;
-      padding: 12px 0;
-      color: var(--text-muted);
-      display: flex;
-      gap: 12px;
-      align-items: flex-start;
+    .install-header {
+      text-align: center;
+      margin-bottom: 56px;
     }
 
-    .install-steps .step-num {
-      background: var(--accent);
-      color: white;
-      width: 24px;
-      height: 24px;
-      border-radius: 50%;
+    .install-header h2 {
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-size: clamp(1.8rem, 3.5vw, 2.5rem);
+      font-weight: 400;
+      margin-bottom: 8px;
+    }
+
+    .install-header p {
+      color: var(--text-secondary);
+      font-weight: 300;
+    }
+
+    .steps {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .step {
+      display: flex;
+      gap: 20px;
+      align-items: flex-start;
+      padding: 20px 24px;
+      border-radius: 16px;
+      transition: background 0.2s;
+    }
+
+    .step:hover {
+      background: var(--glass);
+    }
+
+    .step-num {
+      width: 32px;
+      height: 32px;
+      border-radius: 10px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 0.75rem;
+      font-size: 0.8rem;
       font-weight: 700;
       flex-shrink: 0;
+      background: var(--accent-soft);
+      color: var(--accent);
+      border: 1px solid rgba(110, 142, 255, 0.2);
     }
 
-    .install-steps code {
-      background: var(--surface);
-      padding: 2px 6px;
-      border-radius: 4px;
+    .step-text {
+      padding-top: 4px;
+      font-size: 0.95rem;
+      color: var(--text-secondary);
+      font-weight: 300;
+      line-height: 1.6;
+    }
+
+    .step-text code {
+      background: var(--glass-strong);
+      padding: 2px 8px;
+      border-radius: 6px;
       font-size: 0.85em;
+      border: 1px solid var(--glass-border);
+      font-family: 'SF Mono', 'Fira Code', monospace;
     }
 
-    /* CTA */
+    /* ── CTA ── */
     .cta {
       text-align: center;
-      padding: 80px 0;
-      border-top: 1px solid var(--border);
+      padding: 120px 0 100px;
+      position: relative;
+    }
+
+    .cta-glass {
+      padding: 72px 48px;
+      border-radius: 28px;
+      background: var(--glass);
+      border: 1px solid var(--glass-border);
+      backdrop-filter: blur(30px);
+      -webkit-backdrop-filter: blur(30px);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .cta-glass::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+    }
+
+    .cta-glass::after {
+      content: '';
+      position: absolute;
+      bottom: -100px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 400px;
+      height: 200px;
+      background: radial-gradient(circle, rgba(79, 70, 229, 0.2), transparent 70%);
+      filter: blur(60px);
+      pointer-events: none;
     }
 
     .cta h2 {
-      font-size: 2rem;
+      font-family: 'Instrument Serif', Georgia, serif;
+      font-size: clamp(2rem, 4vw, 2.8rem);
+      font-weight: 400;
       margin-bottom: 16px;
+      position: relative;
     }
 
     .cta p {
-      color: var(--text-muted);
-      margin-bottom: 32px;
+      color: var(--text-secondary);
+      margin-bottom: 40px;
+      font-weight: 300;
+      font-size: 1.05rem;
+      position: relative;
     }
 
-    /* Footer */
+    .cta .btn-dl { position: relative; }
+
+    /* ── Footer ── */
     footer {
       text-align: center;
       padding: 40px 0;
-      border-top: 1px solid var(--border);
-      color: var(--text-muted);
-      font-size: 0.875rem;
+      border-top: 1px solid var(--glass-border);
+      color: var(--text-tertiary);
+      font-size: 0.85rem;
+      font-weight: 300;
     }
 
     footer a {
-      color: var(--accent);
+      color: var(--text-secondary);
       text-decoration: none;
+      transition: color 0.2s;
     }
 
-    footer a:hover {
-      text-decoration: underline;
+    footer a:hover { color: var(--text); }
+
+    /* ── Divider ── */
+    .divider {
+      width: 100%;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--glass-border), transparent);
     }
 
-    @media (max-width: 640px) {
-      .hero h1 { font-size: 2.5rem; }
-      .hero { padding: 80px 0 40px; }
+    /* ── Responsive ── */
+    @media (max-width: 768px) {
+      nav { padding: 12px 20px; }
+      .nav-links a:not(.nav-cta) { display: none; }
+      .hero { padding: 140px 0 40px; }
       .feature-grid { grid-template-columns: 1fr; }
+      .showcase-frame { width: 95%; }
+      .cta-glass { padding: 48px 24px; }
+    }
+
+    /* ── Scroll animations ── */
+    .reveal {
+      opacity: 0;
+      transform: translateY(30px);
+      transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .reveal.visible {
+      opacity: 1;
+      transform: translateY(0);
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <!-- Hero -->
-    <section class="hero">
-      <h1>Meet <span>myOS</span></h1>
-      <p>A unified inbox for iMessage, Gmail, and Instagram. AI-powered digest. Beautiful glassmorphism UI. All on your Mac.</p>
-      <div class="download-buttons">
-        <a href="#" class="btn btn-primary" id="download-btn">
-          <svg fill="currentColor" viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
-          Download for Mac
-        </a>
-      </div>
-    </section>
+  <div class="ambient">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+  </div>
+  <div class="noise"></div>
 
-    <!-- Screenshot -->
-    <div class="screenshot">
-      Replace with app screenshot
+  <div class="page">
+    <!-- Nav -->
+    <nav>
+      <a href="#" class="nav-logo">
+        <!-- myOS Logo: layered glass panes forming an abstract inbox -->
+        <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <linearGradient id="logo-g1" x1="0" y1="0" x2="32" y2="32">
+              <stop offset="0%" stop-color="#6e8eff"/>
+              <stop offset="100%" stop-color="#a78bfa"/>
+            </linearGradient>
+            <linearGradient id="logo-g2" x1="4" y1="8" x2="28" y2="28">
+              <stop offset="0%" stop-color="#6e8eff" stop-opacity="0.6"/>
+              <stop offset="100%" stop-color="#a78bfa" stop-opacity="0.3"/>
+            </linearGradient>
+          </defs>
+          <!-- Back pane -->
+          <rect x="4" y="6" width="24" height="18" rx="5" fill="url(#logo-g2)" stroke="rgba(255,255,255,0.2)" stroke-width="0.5"/>
+          <!-- Front pane -->
+          <rect x="2" y="10" width="24" height="18" rx="5" fill="url(#logo-g1)" stroke="rgba(255,255,255,0.3)" stroke-width="0.5"/>
+          <!-- Envelope flap / message indicator -->
+          <path d="M4 14 L14 21 L24 14" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" fill="none" opacity="0.9"/>
+          <!-- Glow dot -->
+          <circle cx="24" cy="10" r="3.5" fill="#5eead4"/>
+          <circle cx="24" cy="10" r="3.5" fill="#5eead4" opacity="0.4">
+            <animate attributeName="r" values="3.5;5;3.5" dur="2s" repeatCount="indefinite"/>
+            <animate attributeName="opacity" values="0.4;0;0.4" dur="2s" repeatCount="indefinite"/>
+          </circle>
+        </svg>
+        <span>myOS</span>
+      </a>
+      <div class="nav-links">
+        <a href="#features">Features</a>
+        <a href="#install">Setup</a>
+        <a href="https://github.com/phobopan/myOS" target="_blank" rel="noopener">GitHub</a>
+        <a href="#" class="nav-cta" id="nav-dl">Download</a>
+      </div>
+    </nav>
+
+    <div class="container">
+      <!-- Hero -->
+      <section class="hero">
+        <div class="hero-badge">
+          <span class="pulse"></span>
+          Now in beta
+        </div>
+        <h1>One inbox for<br><em>everything</em></h1>
+        <p class="hero-sub">
+          iMessage and Gmail in a single, beautiful app. AI-powered digest keeps you focused on what matters.
+        </p>
+        <div class="hero-actions">
+          <a href="#" class="btn-dl" id="download-btn">
+            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+            Download for Mac
+          </a>
+          <a href="https://github.com/phobopan/myOS" target="_blank" rel="noopener" class="btn-ghost">
+            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+            View source
+          </a>
+        </div>
+      </section>
+
+      <!-- Screenshot showcase -->
+      <div class="showcase reveal">
+        <div class="showcase-stack">
+          <div class="showcase-frame">
+            <!-- Replace this div with: <img src="screenshot.png" alt="myOS app"> -->
+            <div class="showcase-placeholder">
+              Drop your screenshot here — save as website/screenshot.png
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="divider"></div>
+
+      <!-- Features -->
+      <section class="features" id="features">
+        <div class="features-header reveal">
+          <span class="section-label">Features</span>
+          <h2>Everything, unified</h2>
+          <p>Stop switching between apps. Start focusing on people.</p>
+        </div>
+        <div class="feature-grid">
+          <div class="feature-card reveal">
+            <div class="feature-icon" style="background: rgba(110, 142, 255, 0.12); color: var(--accent);">
+              <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"/></svg>
+            </div>
+            <h3>Unified Inbox</h3>
+            <p>iMessage and Gmail conversations flow into a single, chronologically sorted timeline. No more tab switching.</p>
+          </div>
+          <div class="feature-card reveal">
+            <div class="feature-icon" style="background: rgba(167, 139, 250, 0.12); color: var(--violet);">
+              <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z"/></svg>
+            </div>
+            <h3>AI Digest</h3>
+            <p>Get an AI-generated summary of what needs your attention. Choose Claude, OpenAI, or Gemini as your engine.</p>
+          </div>
+          <div class="feature-card reveal">
+            <div class="feature-icon" style="background: rgba(94, 234, 212, 0.12); color: var(--teal);">
+              <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.33a18.095 18.095 0 005.223-5.223c.542-.827.369-1.908-.33-2.607L11.16 3.66A2.25 2.25 0 009.568 3z"/><path d="M6 6h.008v.008H6V6z"/></svg>
+            </div>
+            <h3>Smart Organization</h3>
+            <p>Tags, priority tiers, contact clusters, and filters. Pin important conversations to your personal dashboard.</p>
+          </div>
+          <div class="feature-card reveal">
+            <div class="feature-icon" style="background: rgba(251, 113, 133, 0.12); color: var(--rose);">
+              <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M6.75 7.5l3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0021 18V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v12a2.25 2.25 0 002.25 2.25z"/></svg>
+            </div>
+            <h3>Native Mac Experience</h3>
+            <p>Built with Electron and glassmorphism UI. Vibrancy, transparency, and native macOS integration throughout.</p>
+          </div>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- Platforms -->
+      <section class="platforms reveal">
+        <span class="section-label">Integrations</span>
+        <h2>Connects to what you use</h2>
+        <p>More platforms coming soon.</p>
+        <div class="platform-row">
+          <div class="platform-chip">
+            <span class="dot" style="background: #34d058;"></span>
+            iMessage
+          </div>
+          <div class="platform-chip">
+            <span class="dot" style="background: #ea4335;"></span>
+            Gmail
+          </div>
+          <div class="platform-chip">
+            <span class="dot" style="background: rgba(255,255,255,0.15);"></span>
+            <span class="coming">More coming soon</span>
+          </div>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- Install -->
+      <section class="install reveal" id="install">
+        <div class="install-inner">
+          <div class="install-header">
+            <span class="section-label">Setup</span>
+            <h2>Up and running in two minutes</h2>
+            <p>Requires macOS with Apple Silicon (M1 or later).</p>
+          </div>
+          <ul class="steps">
+            <li class="step">
+              <span class="step-num">1</span>
+              <span class="step-text">Download the DMG from GitHub Releases.</span>
+            </li>
+            <li class="step">
+              <span class="step-num">2</span>
+              <span class="step-text">Open the DMG and drag <strong>myOS</strong> to your Applications folder.</span>
+            </li>
+            <li class="step">
+              <span class="step-num">3</span>
+              <span class="step-text">Right-click the app and select <code>Open</code> — required on first launch for unsigned apps.</span>
+            </li>
+            <li class="step">
+              <span class="step-num">4</span>
+              <span class="step-text">Grant <strong>Full Disk Access</strong> when prompted to enable iMessage reading.</span>
+            </li>
+          </ul>
+        </div>
+      </section>
+
+      <div class="divider"></div>
+
+      <!-- CTA -->
+      <section class="cta reveal">
+        <div class="cta-glass">
+          <h2>Ready to unify your inbox?</h2>
+          <p>Download myOS for free. Open source, always.</p>
+          <a href="#" class="btn-dl" id="download-cta">
+            <svg fill="currentColor" viewBox="0 0 24 24"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+            Download for Mac
+          </a>
+        </div>
+      </section>
     </div>
 
-    <!-- Features -->
-    <section class="features">
-      <h2>Everything in one place</h2>
-      <div class="feature-grid">
-        <div class="feature-card">
-          <div class="icon" style="background: rgba(59, 130, 246, 0.15); color: #3b82f6;">&#9993;</div>
-          <h3>Unified Inbox</h3>
-          <p>iMessage, Gmail, and Instagram conversations in a single, sorted timeline.</p>
-        </div>
-        <div class="feature-card">
-          <div class="icon" style="background: rgba(139, 92, 246, 0.15); color: #8b5cf6;">&#9733;</div>
-          <h3>AI Digest</h3>
-          <p>Get an AI-generated summary of what needs your attention. Daily, hourly, or weekly.</p>
-        </div>
-        <div class="feature-card">
-          <div class="icon" style="background: rgba(16, 185, 129, 0.15); color: #10b981;">&#9776;</div>
-          <h3>Smart Organization</h3>
-          <p>Tags, priority tiers, clusters, and filters to stay on top of what matters.</p>
-        </div>
-        <div class="feature-card">
-          <div class="icon" style="background: rgba(245, 158, 11, 0.15); color: #f59e0b;">&#9881;</div>
-          <h3>Multi-Provider AI</h3>
-          <p>Choose Claude, OpenAI, or Gemini. Bring your own API key or use Claude CLI.</p>
-        </div>
+    <footer>
+      <div class="container">
+        <p>
+          Open source &middot;
+          <a href="https://github.com/phobopan/myOS" target="_blank" rel="noopener">GitHub</a>
+        </p>
       </div>
-    </section>
-
-    <!-- Platforms -->
-    <section class="platforms">
-      <h2>Works with your messaging platforms</h2>
-      <p>Connect what you already use.</p>
-      <div class="platform-icons">
-        <span><span class="dot" style="background: #34d058;"></span> iMessage</span>
-        <span><span class="dot" style="background: #ea4335;"></span> Gmail</span>
-        <span><span class="dot" style="background: #e4405f;"></span> Instagram</span>
-      </div>
-    </section>
-
-    <!-- Install -->
-    <section class="install">
-      <h2>How to install</h2>
-      <ul class="install-steps">
-        <li>
-          <span class="step-num">1</span>
-          <span>Download the DMG for your Mac.</span>
-        </li>
-        <li>
-          <span class="step-num">2</span>
-          <span>Open the DMG and drag myOS to your Applications folder.</span>
-        </li>
-        <li>
-          <span class="step-num">3</span>
-          <span>Right-click the app and select <code>Open</code> (required for unsigned apps).</span>
-        </li>
-        <li>
-          <span class="step-num">4</span>
-          <span>Grant Full Disk Access when prompted to enable iMessage reading.</span>
-        </li>
-      </ul>
-    </section>
-
-    <!-- CTA -->
-    <section class="cta">
-      <h2>Ready to simplify your inbox?</h2>
-      <p>Download myOS and take control of your messages.</p>
-      <a href="#" class="btn btn-primary" id="download-cta">Download for Mac</a>
-    </section>
+    </footer>
   </div>
 
-  <footer>
-    <div class="container">
-      <p>
-        myOS is open source.
-        <a href="https://github.com/phobopan/myOS" target="_blank" rel="noopener">View on GitHub</a>
-      </p>
-    </div>
-  </footer>
-
   <script>
-    // Replace with your actual GitHub username/repo
+    // Download links
     const REPO = 'phobopan/myOS';
-
     const releaseUrl = `https://github.com/${REPO}/releases/latest`;
     document.getElementById('download-btn').href = releaseUrl;
     document.getElementById('download-cta').href = releaseUrl;
+    document.getElementById('nav-dl').href = releaseUrl;
+
+    // Scroll reveal
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' });
+
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
   </script>
 </body>
 </html>
