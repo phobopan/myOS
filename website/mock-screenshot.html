@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>myOS Mock Screenshot</title>
+  <style>
+    /*
+      1. Open in Safari (best for backdrop-filter)
+      2. Cmd+Shift+4 → Space → click window
+      3. Save as website/screenshot.png
+    */
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      background: #000000;
+      width: 1280px;
+      height: 800px;
+      overflow: hidden;
+    }
+
+    /* ── App window ── */
+    .window {
+      width: 1280px;
+      height: 800px;
+      background: rgba(15, 15, 15, 0.95);
+      display: flex;
+      flex-direction: column;
+      border-radius: 12px;
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    /* ── Titlebar ── */
+    .titlebar {
+      height: 52px;
+      display: flex;
+      align-items: center;
+      padding: 0 16px;
+      background: rgba(255, 255, 255, 0.04);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      flex-shrink: 0;
+    }
+
+    .traffic-lights { display: flex; gap: 8px; width: 70px; }
+    .traffic-dot { width: 12px; height: 12px; border-radius: 50%; }
+    .dot-close { background: #ff5f57; }
+    .dot-min { background: #febc2e; }
+    .dot-max { background: #28c840; }
+
+    .titlebar-text {
+      font-size: 14px;
+      font-weight: 600;
+      color: rgba(255, 255, 255, 0.8);
+      letter-spacing: -0.01em;
+    }
+
+    .titlebar-right { margin-left: auto; }
+
+    .settings-btn {
+      padding: 8px;
+      border-radius: 8px;
+      background: none;
+      border: none;
+      color: rgba(255, 255, 255, 0.6);
+    }
+
+    /* ── Main layout ── */
+    .main { display: flex; flex: 1; min-height: 0; }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 320px;
+      flex-shrink: 0;
+      display: flex;
+      flex-direction: column;
+      border-right: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    /* ── Filter pills — exact match to Sidebar.tsx FilterPill ── */
+    .filter-bar {
+      padding: 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      gap: 4px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .pill {
+      padding: 5px 14px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 500;
+      border: none;
+    }
+
+    .pill-active { background: rgba(255, 255, 255, 0.2); color: white; }
+    .pill-inactive { background: transparent; color: rgba(255, 255, 255, 0.5); }
+
+    .divider-line {
+      width: 1px;
+      height: 16px;
+      background: rgba(255, 255, 255, 0.1);
+      margin: 0 4px;
+    }
+
+    .tag-pill { display: flex; align-items: center; gap: 4px; }
+    .tag-dot { width: 6px; height: 6px; border-radius: 50%; }
+
+    /* ── Sort bar — matches Sidebar sort/inbox toggle ── */
+    .sort-bar {
+      padding: 6px 8px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      gap: 4px;
+      align-items: center;
+    }
+
+    .sort-btn {
+      padding: 4px 12px;
+      border-radius: 9999px;
+      font-size: 11px;
+      font-weight: 500;
+      border: none;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .sort-active { background: rgba(255, 255, 255, 0.2); color: white; }
+    .sort-inactive { background: transparent; color: rgba(255, 255, 255, 0.5); }
+
+    /* ── Sidebar special rows (Dashboard, Digest) ── */
+    .sidebar-special {
+      padding: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .special-icon {
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      flex-shrink: 0;
+    }
+
+    .special-text h4 { font-size: 13px; font-weight: 500; color: white; }
+    .special-text p { font-size: 11px; color: rgba(255, 255, 255, 0.4); }
+
+    /* ── Message list items — exact match to Sidebar msg buttons ── */
+    .message-list { flex: 1; overflow-y: auto; }
+
+    .msg-item {
+      width: 100%;
+      padding: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+    }
+
+    .msg-item.selected { background: rgba(255, 255, 255, 0.1); }
+
+    /* SourceIcon circles — match source-dot-imessage / source-dot-gmail */
+    .src-dot {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .src-imessage { background: linear-gradient(135deg, #34d399, #10b981); }
+    .src-gmail { background: linear-gradient(135deg, #fb7185, #e11d48); }
+
+    .msg-content { flex: 1; min-width: 0; }
+
+    .msg-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .msg-name-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
+
+    .msg-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: white;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .msg-tag-dots { display: flex; gap: 2px; }
+    .msg-tag-dot { width: 5px; height: 5px; border-radius: 50%; }
+
+    .msg-time {
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.4);
+      flex-shrink: 0;
+    }
+
+    .msg-preview {
+      font-size: 14px;
+      color: rgba(255, 255, 255, 0.5);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin-top: 2px;
+      font-weight: 400;
+    }
+
+    /* ── Thread view — right panel ── */
+    .thread-panel {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      padding: 16px;
+      overflow: hidden;
+    }
+
+    /* widget-bubble-large glass card */
+    .glass-card {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+      position: relative;
+    }
+
+    /* Top highlight line — widget-bubble::before */
+    .glass-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4), transparent);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* ── Thread header inside glass card ── */
+    .thread-header {
+      padding: 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .thread-avatar {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #22c55e;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .thread-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: white;
+      letter-spacing: -0.01em;
+    }
+
+    .thread-actions {
+      margin-left: auto;
+      display: flex;
+      gap: 8px;
+    }
+
+    .action-btn {
+      padding: 6px 14px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: rgba(255, 255, 255, 0.6);
+      font-size: 11px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    /* ── Messages area ── */
+    .messages-area {
+      flex: 1;
+      padding: 20px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      overflow-y: auto;
+    }
+
+    .date-label {
+      text-align: center;
+      font-size: 11px;
+      color: rgba(255, 255, 255, 0.3);
+      padding: 4px 0 8px;
+    }
+
+    .bubble-row { display: flex; }
+    .bubble-row.them { justify-content: flex-start; }
+    .bubble-row.me { justify-content: flex-end; }
+
+    .bubble-wrap { max-width: 70%; position: relative; }
+
+    /* Message bubbles — exact match to MessageBubble.tsx */
+    .bubble {
+      border-radius: 18px;
+      padding: 10px 16px;
+      font-size: 14px;
+      line-height: 1.5;
+      word-break: break-word;
+    }
+
+    .bubble-them {
+      background: rgba(255, 255, 255, 0.1);
+      color: white;
+    }
+
+    .bubble-me {
+      background: rgba(59, 130, 246, 0.8);
+      color: white;
+    }
+
+    .bubble-time {
+      font-size: 11px;
+      margin-top: 4px;
+    }
+
+    .bubble-them .bubble-time { color: rgba(255, 255, 255, 0.4); }
+    .bubble-me .bubble-time { color: rgba(255, 255, 255, 0.6); }
+
+    /* Reactions — match MessageBubble reaction badges */
+    .reaction {
+      position: absolute;
+      bottom: -8px;
+      background: rgba(255, 255, 255, 0.2);
+      -webkit-backdrop-filter: blur(8px);
+      backdrop-filter: blur(8px);
+      border-radius: 9999px;
+      padding: 2px 6px;
+      font-size: 11px;
+    }
+
+    .reaction-left { left: 8px; }
+    .reaction-right { right: 8px; }
+
+    /* ── Composer — matches Composer.tsx layout ── */
+    .composer {
+      padding: 16px;
+      border-top: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .composer-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 12px;
+    }
+
+    .composer-input {
+      flex: 1;
+      padding: 10px 16px;
+      min-height: 42px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.1);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: rgba(255, 255, 255, 0.4);
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+    }
+
+    .draft-btn {
+      width: 42px;
+      height: 42px;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.1);
+      border: none;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .send-btn {
+      height: 42px;
+      padding: 0 16px;
+      border-radius: 12px;
+      background: #3b82f6;
+      border: none;
+      color: white;
+      font-size: 14px;
+      font-weight: 500;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .composer-hint {
+      text-align: center;
+      font-size: 12px;
+      color: rgba(255, 255, 255, 0.3);
+      margin-top: 8px;
+    }
+
+    /* ── Scrollbar — matches index.css ── */
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.2); border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.3); }
+  </style>
+</head>
+<body>
+  <div class="window">
+    <!-- ── Titlebar ── -->
+    <div class="titlebar">
+      <div class="traffic-lights">
+        <div class="traffic-dot dot-close"></div>
+        <div class="traffic-dot dot-min"></div>
+        <div class="traffic-dot dot-max"></div>
+      </div>
+      <span class="titlebar-text">myOS</span>
+      <div class="titlebar-right">
+        <button class="settings-btn">
+          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="main">
+      <!-- ── Sidebar ── -->
+      <div class="sidebar">
+        <!-- Filter pills -->
+        <div class="filter-bar">
+          <button class="pill pill-active">All</button>
+          <button class="pill pill-inactive">iMessage</button>
+          <button class="pill pill-inactive">Gmail</button>
+          <div class="divider-line"></div>
+          <button class="pill pill-inactive tag-pill">
+            <span class="tag-dot" style="background: #3b82f6;"></span>
+            Work
+          </button>
+          <button class="pill pill-inactive tag-pill">
+            <span class="tag-dot" style="background: #f59e0b;"></span>
+            Family
+          </button>
+        </div>
+
+        <!-- Sort / inbox toggle -->
+        <div class="sort-bar">
+          <button class="sort-btn sort-active">
+            <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            Recent
+          </button>
+          <button class="sort-btn sort-inactive">
+            <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"/></svg>
+            Priority
+          </button>
+          <div class="divider-line"></div>
+          <button class="sort-btn sort-active">Unreplied</button>
+          <button class="sort-btn sort-inactive">All</button>
+        </div>
+
+        <!-- Dashboard -->
+        <div class="sidebar-special">
+          <div class="special-icon" style="background: #3b82f6;">
+            <svg width="10" height="10" fill="currentColor" viewBox="0 0 24 24"><path d="M11.47 3.84a.75.75 0 011.06 0l8.69 8.69a.75.75 0 101.06-1.06l-8.689-8.69a2.25 2.25 0 00-3.182 0l-8.69 8.69a.75.75 0 001.061 1.06l8.69-8.69z"/><path d="M12 5.432l8.159 8.159c.03.03.06.058.091.086v6.198c0 1.035-.84 1.875-1.875 1.875H15a.75.75 0 01-.75-.75v-4.5a.75.75 0 00-.75-.75h-3a.75.75 0 00-.75.75V21a.75.75 0 01-.75.75H5.625a1.875 1.875 0 01-1.875-1.875v-6.198a2.29 2.29 0 00.091-.086L12 5.43z"/></svg>
+          </div>
+          <div class="special-text">
+            <h4>Dashboard</h4>
+            <p>Pinned conversations</p>
+          </div>
+        </div>
+
+        <!-- Daily Digest -->
+        <div class="sidebar-special">
+          <div class="special-icon" style="background: #a855f7;">
+            <svg width="10" height="10" fill="currentColor" viewBox="0 0 24 24"><path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/></svg>
+          </div>
+          <div class="special-text">
+            <h4>Daily Digest</h4>
+            <p>Updated 2 hours ago</p>
+          </div>
+        </div>
+
+        <!-- ── Message list ── -->
+        <div class="message-list">
+          <!-- Selected -->
+          <div class="msg-item selected">
+            <div class="src-dot src-imessage"></div>
+            <div class="msg-content">
+              <div class="msg-header">
+                <div class="msg-name-row">
+                  <span class="msg-name">Emma Liu</span>
+                  <div class="msg-tag-dots">
+                    <div class="msg-tag-dot" style="background: #3b82f6;"></div>
+                  </div>
+                </div>
+                <span class="msg-time">2:41 PM</span>
+              </div>
+              <div class="msg-preview">do you have the deck from this morning? i need to send it to kevin before 5</div>
+            </div>
+          </div>
+
+          <div class="msg-item">
+            <div class="src-dot src-gmail"></div>
+            <div class="msg-content">
+              <div class="msg-header">
+                <div class="msg-name-row">
+                  <span class="msg-name">Nate Bergman</span>
+                  <div class="msg-tag-dots">
+                    <div class="msg-tag-dot" style="background: #3b82f6;"></div>
+                  </div>
+                </div>
+                <span class="msg-time">1:15 PM</span>
+              </div>
+              <div class="msg-preview">Re: Sprint retro — I updated the doc with action items from today</div>
+            </div>
+          </div>
+
+          <div class="msg-item">
+            <div class="src-dot src-imessage"></div>
+            <div class="msg-content">
+              <div class="msg-header">
+                <div class="msg-name-row">
+                  <span class="msg-name">Mom</span>
+                  <div class="msg-tag-dots">
+                    <div class="msg-tag-dot" style="background: #f59e0b;"></div>
+                  </div>
+                </div>
+                <span class="msg-time">12:08 PM</span>
+              </div>
+              <div class="msg-preview">Can you pick up olive oil on your way home? Dad's making pasta tonight</div>
+            </div>
+          </div>
+
+          <div class="msg-item">
+            <div class="src-dot src-gmail"></div>
+            <div class="msg-content">
+              <div class="msg-header">
+                <div class="msg-name-row">
+                  <span class="msg-name">Stripe</span>
+                </div>
+                <span class="msg-time">11:42 AM</span>
+              </div>
+              <div class="msg-preview">Your payout of $2,340.00 has been initiated and is on the way</div>
+            </div>
+          </div>
+
+          <div class="msg-item">
+            <div class="src-dot src-imessage"></div>
+            <div class="msg-content">
+              <div class="msg-header">
+                <div class="msg-name-row">
+                  <span class="msg-name">Jake + 3 others</span>
+                </div>
+                <span class="msg-time">10:20 AM</span>
+              </div>
+              <div class="msg-preview">Jake: wait who's bringing the aux cord lol</div>
+            </div>
+          </div>
+
+          <div class="msg-item">
+            <div class="src-dot src-gmail"></div>
+            <div class="msg-content">
+              <div class="msg-header">
+                <div class="msg-name-row">
+                  <span class="msg-name">Figma</span>
+                </div>
+                <span class="msg-time">9:30 AM</span>
+              </div>
+              <div class="msg-preview">3 new comments on "Dashboard Redesign v2"</div>
+            </div>
+          </div>
+
+          <div class="msg-item">
+            <div class="src-dot src-imessage"></div>
+            <div class="msg-content">
+              <div class="msg-header">
+                <div class="msg-name-row">
+                  <span class="msg-name">Priya Sharma</span>
+                  <div class="msg-tag-dots">
+                    <div class="msg-tag-dot" style="background: #3b82f6;"></div>
+                  </div>
+                </div>
+                <span class="msg-time">Yesterday</span>
+              </div>
+              <div class="msg-preview">hey just saw the demo, this is actually really sick</div>
+            </div>
+          </div>
+
+          <div class="msg-item">
+            <div class="src-dot src-gmail"></div>
+            <div class="msg-content">
+              <div class="msg-header">
+                <div class="msg-name-row">
+                  <span class="msg-name">GitHub</span>
+                </div>
+                <span class="msg-time">Yesterday</span>
+              </div>
+              <div class="msg-preview">[myOS] natebergman merged pull request #47: fix/sidebar-scroll</div>
+            </div>
+          </div>
+
+          <div class="msg-item">
+            <div class="src-dot src-imessage"></div>
+            <div class="msg-content">
+              <div class="msg-header">
+                <div class="msg-name-row">
+                  <span class="msg-name">Olivia Torres</span>
+                  <div class="msg-tag-dots">
+                    <div class="msg-tag-dot" style="background: #f59e0b;"></div>
+                  </div>
+                </div>
+                <span class="msg-time">Yesterday</span>
+              </div>
+              <div class="msg-preview">can you send me that playlist from saturday?</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Thread panel — p-4 wrapper + widget-bubble-large glass card ── -->
+      <div class="thread-panel">
+        <div class="glass-card">
+          <!-- Thread header -->
+          <div class="thread-header">
+            <div class="thread-avatar">
+              <svg width="12" height="12" fill="white" viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2z"/></svg>
+            </div>
+            <span class="thread-name">Emma Liu</span>
+            <div class="thread-actions">
+              <div class="action-btn">
+                <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg>
+                Pin
+              </div>
+              <div class="action-btn">
+                <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                Done
+              </div>
+            </div>
+          </div>
+
+          <!-- Messages -->
+          <div class="messages-area">
+            <div class="date-label">Today</div>
+
+            <div class="bubble-row them">
+              <div class="bubble-wrap">
+                <div class="bubble bubble-them">
+                  hey are you in the office today?
+                  <div class="bubble-time">10:14 AM</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="bubble-row me">
+              <div class="bubble-wrap">
+                <div class="bubble bubble-me">
+                  yeah i got here like 20 min ago, working from the back room
+                  <div class="bubble-time">10:16 AM</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="bubble-row them">
+              <div class="bubble-wrap">
+                <div class="bubble bubble-them">
+                  ok cool, did the standup already happen?
+                  <div class="bubble-time">10:17 AM</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="bubble-row me">
+              <div class="bubble-wrap">
+                <div class="bubble bubble-me">
+                  yeah it was quick tho, nate just went over the sprint stuff. nothing major
+                  <div class="bubble-time">10:18 AM</div>
+                </div>
+                <div class="reaction reaction-left">&#128077;</div>
+              </div>
+            </div>
+
+            <div class="bubble-row them">
+              <div class="bubble-wrap">
+                <div class="bubble bubble-them">
+                  ok good. also random but kevin asked me about the investor deck from this morning
+                  <div class="bubble-time">2:38 PM</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="bubble-row them">
+              <div class="bubble-wrap">
+                <div class="bubble bubble-them">
+                  do you have it? i think you were the one sharing your screen
+                  <div class="bubble-time">2:39 PM</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="bubble-row me">
+              <div class="bubble-wrap">
+                <div class="bubble bubble-me">
+                  yeah one sec let me find it in drive
+                  <div class="bubble-time">2:40 PM</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="bubble-row them">
+              <div class="bubble-wrap">
+                <div class="bubble bubble-them">
+                  do you have the deck from this morning? i need to send it to kevin before 5
+                  <div class="bubble-time">2:41 PM</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Composer -->
+          <div class="composer">
+            <div class="composer-row">
+              <div class="composer-input">iMessage to Emma Liu</div>
+              <div class="draft-btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L9.19 8.63 2 9.24l5.46 4.73L5.82 21 12 17.27 18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2z"/></svg>
+              </div>
+              <div class="send-btn">Send</div>
+            </div>
+            <div class="composer-hint">Enter to send, Shift+Enter for new line</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

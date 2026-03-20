@@ -36,6 +36,5 @@
       }
     ]
   },
-  "afterSign": [],
   "npmRebuild": true
 }

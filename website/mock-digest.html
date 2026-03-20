@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>myOS Mock — Daily Digest</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      background: #000000;
+      width: 1280px;
+      height: 800px;
+      overflow: hidden;
+    }
+
+    .window {
+      width: 1280px; height: 800px;
+      background: rgba(15, 15, 15, 0.95);
+      display: flex; flex-direction: column;
+      border-radius: 12px; overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    /* Titlebar */
+    .titlebar {
+      height: 52px; display: flex; align-items: center; padding: 0 16px;
+      background: rgba(255,255,255,0.04);
+      border-bottom: 1px solid rgba(255,255,255,0.1); flex-shrink: 0;
+    }
+    .traffic-lights { display: flex; gap: 8px; width: 70px; }
+    .td { width: 12px; height: 12px; border-radius: 50%; }
+    .td-r { background: #ff5f57; } .td-y { background: #febc2e; } .td-g { background: #28c840; }
+    .tt { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.8); letter-spacing: -0.01em; }
+    .tr { margin-left: auto; }
+    .sb { padding: 8px; border-radius: 8px; background: none; border: none; color: rgba(255,255,255,0.6); }
+
+    .main { display: flex; flex: 1; min-height: 0; }
+
+    /* Sidebar — reuse from inbox mock */
+    .sidebar {
+      width: 320px; flex-shrink: 0; display: flex; flex-direction: column;
+      border-right: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.04);
+    }
+    .filter-bar { padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+    .pill { padding: 5px 14px; border-radius: 9999px; font-size: 12px; font-weight: 500; border: none; }
+    .pa { background: rgba(255,255,255,0.2); color: white; }
+    .pi { background: transparent; color: rgba(255,255,255,0.5); }
+    .dv { width: 1px; height: 16px; background: rgba(255,255,255,0.1); margin: 0 4px; }
+    .tp { display: flex; align-items: center; gap: 4px; }
+    .tgd { width: 6px; height: 6px; border-radius: 50%; }
+
+    .sort-bar { padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.1); display: flex; gap: 4px; align-items: center; }
+    .sbt { padding: 4px 12px; border-radius: 9999px; font-size: 11px; font-weight: 500; border: none; display: flex; align-items: center; gap: 4px; }
+    .sa { background: rgba(255,255,255,0.2); color: white; }
+    .si { background: transparent; color: rgba(255,255,255,0.5); }
+
+    .ss { padding: 12px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid rgba(255,255,255,0.1); }
+    .ss.active { background: rgba(255,255,255,0.1); }
+    .si-icon { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; }
+    .st h4 { font-size: 13px; font-weight: 500; color: white; }
+    .st p { font-size: 11px; color: rgba(255,255,255,0.4); }
+
+    .ml { flex: 1; overflow-y: auto; }
+    .mi { width: 100%; padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); display: flex; gap: 8px; align-items: flex-start; }
+    .mi.sel { background: rgba(255,255,255,0.1); }
+    .sd { width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0; margin-top: 2px; }
+    .sd-i { background: linear-gradient(135deg, #34d399, #10b981); }
+    .sd-g { background: linear-gradient(135deg, #fb7185, #e11d48); }
+    .mc { flex: 1; min-width: 0; }
+    .mh { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .mn-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
+    .mn { font-size: 14px; font-weight: 500; color: white; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .mt { font-size: 12px; color: rgba(255,255,255,0.4); flex-shrink: 0; }
+    .mp { font-size: 14px; color: rgba(255,255,255,0.5); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; font-weight: 400; }
+    .mtd { display: flex; gap: 2px; }
+    .mtdd { width: 5px; height: 5px; border-radius: 50%; }
+
+    /* ── Digest panel (right side) ── */
+    .digest-panel {
+      flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 16px; overflow: hidden;
+    }
+
+    .glass-card {
+      flex: 1; min-height: 0; display: flex; flex-direction: column; overflow: hidden;
+      background: rgba(255,255,255,0.08);
+      border-radius: 16px; border: 1px solid rgba(255,255,255,0.15);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.3); position: relative;
+    }
+    .glass-card::before {
+      content: ''; position: absolute; top: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+      pointer-events: none; z-index: 1;
+    }
+
+    /* Digest header */
+    .dh {
+      padding: 16px; border-bottom: 1px solid rgba(255,255,255,0.1);
+      display: flex; align-items: center; gap: 12px;
+    }
+    .dh-icon {
+      width: 24px; height: 24px; border-radius: 50%; background: #a855f7;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .dh-text { flex: 1; }
+    .dh-text h2 { font-size: 14px; font-weight: 600; color: white; letter-spacing: -0.01em; }
+    .dh-text p { font-size: 11px; color: rgba(255,255,255,0.4); }
+    .dh-regen {
+      padding: 6px 14px; border-radius: 8px; background: rgba(168,85,247,0.15);
+      border: 1px solid rgba(168,85,247,0.25); color: #c084fc; font-size: 11px; font-weight: 500;
+      display: flex; align-items: center; gap: 5px;
+    }
+
+    /* Digest tabs */
+    .dtabs { display: flex; padding: 12px 16px 0; gap: 4px; }
+    .dtab {
+      padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 500; border: none;
+    }
+    .dtab-active { background: rgba(59,130,246,0.2); color: #93bbfd; }
+    .dtab-inactive { background: transparent; color: rgba(255,255,255,0.4); }
+    .dtab-count { font-size: 10px; opacity: 0.6; margin-left: 6px; }
+
+    /* Digest content */
+    .dc { flex: 1; overflow-y: auto; padding: 16px; }
+
+    /* Summary box */
+    .summary-box {
+      border-radius: 8px; background: rgba(59,130,246,0.1);
+      border: 1px solid rgba(59,130,246,0.15);
+      padding: 12px 16px; margin-bottom: 16px;
+    }
+    .summary-label {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+    }
+    .summary-dot { width: 8px; height: 8px; border-radius: 50%; background: #60a5fa; flex-shrink: 0; }
+    .summary-label h3 {
+      font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.8);
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .summary-text {
+      font-size: 14px; color: rgba(255,255,255,0.7); line-height: 1.6;
+    }
+    .summary-link { color: #60a5fa; font-weight: 500; }
+
+    /* Conversation section */
+    .section-label {
+      display: flex; align-items: center; gap: 8px; margin-bottom: 8px;
+    }
+    .section-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .section-label h3 {
+      font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.8);
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+
+    .digest-item {
+      display: flex; align-items: flex-start; gap: 0; padding: 0;
+    }
+    .di-check {
+      flex-shrink: 0; width: 28px; height: 28px; margin-top: 6px;
+      display: flex; align-items: center; justify-content: center;
+      color: transparent;
+    }
+    .digest-item:hover .di-check { color: rgba(255,255,255,0.3); }
+    .di-body {
+      flex: 1; min-width: 0; padding: 8px; border-radius: 8px;
+      display: flex; align-items: flex-start; gap: 12px;
+    }
+    .digest-item:hover .di-body { background: rgba(255,255,255,0.05); }
+    .di-info { flex: 1; min-width: 0; }
+    .di-name { font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.9); }
+    .di-note { font-size: 12px; color: rgba(255,255,255,0.45); margin-top: 2px; }
+    .di-arrow {
+      color: rgba(255,255,255,0.2); margin-top: 4px; flex-shrink: 0;
+    }
+
+    /* Dealt with */
+    .dealt { opacity: 0.4; }
+    .dealt .di-name { text-decoration: line-through; color: rgba(255,255,255,0.5); }
+    .dealt .di-note { text-decoration: line-through; color: rgba(255,255,255,0.25); }
+    .dealt .di-check { color: rgba(74,222,128,0.7) !important; }
+
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div class="window">
+    <div class="titlebar">
+      <div class="traffic-lights"><div class="td td-r"></div><div class="td td-y"></div><div class="td td-g"></div></div>
+      <span class="tt">myOS</span>
+      <div class="tr"><button class="sb"><svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg></button></div>
+    </div>
+
+    <div class="main">
+      <div class="sidebar">
+        <div class="filter-bar">
+          <button class="pill pa">All</button><button class="pill pi">iMessage</button><button class="pill pi">Gmail</button>
+          <div class="dv"></div>
+          <button class="pill pi tp"><span class="tgd" style="background:#3b82f6;"></span>Work</button>
+          <button class="pill pi tp"><span class="tgd" style="background:#f59e0b;"></span>Family</button>
+        </div>
+        <div class="sort-bar">
+          <button class="sbt sa"><svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>Recent</button>
+          <button class="sbt si"><svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"/></svg>Priority</button>
+          <div class="dv"></div>
+          <button class="sbt sa">Unreplied</button><button class="sbt si">All</button>
+        </div>
+        <div class="ss"><div class="si-icon" style="background:#3b82f6;"><svg width="10" height="10" fill="currentColor" viewBox="0 0 24 24"><path d="M11.47 3.84a.75.75 0 011.06 0l8.69 8.69a.75.75 0 101.06-1.06l-8.689-8.69a2.25 2.25 0 00-3.182 0l-8.69 8.69a.75.75 0 001.061 1.06l8.69-8.69z"/><path d="M12 5.432l8.159 8.159c.03.03.06.058.091.086v6.198c0 1.035-.84 1.875-1.875 1.875H15a.75.75 0 01-.75-.75v-4.5a.75.75 0 00-.75-.75h-3a.75.75 0 00-.75.75V21a.75.75 0 01-.75.75H5.625a1.875 1.875 0 01-1.875-1.875v-6.198a2.29 2.29 0 00.091-.086L12 5.43z"/></svg></div><div class="st"><h4>Dashboard</h4><p>Pinned conversations</p></div></div>
+        <div class="ss active"><div class="si-icon" style="background:#a855f7;"><svg width="10" height="10" fill="currentColor" viewBox="0 0 24 24"><path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/></svg></div><div class="st"><h4>Daily Digest</h4><p>Updated 2 hours ago</p></div></div>
+        <div class="ml">
+          <div class="mi"><div class="sd sd-i"></div><div class="mc"><div class="mh"><div class="mn-row"><span class="mn">Emma Liu</span><div class="mtd"><div class="mtdd" style="background:#3b82f6;"></div></div></div><span class="mt">2:41 PM</span></div><div class="mp">do you have the deck from this morning?</div></div></div>
+          <div class="mi"><div class="sd sd-g"></div><div class="mc"><div class="mh"><div class="mn-row"><span class="mn">Nate Bergman</span><div class="mtd"><div class="mtdd" style="background:#3b82f6;"></div></div></div><span class="mt">1:15 PM</span></div><div class="mp">Re: Sprint retro — updated action items</div></div></div>
+          <div class="mi"><div class="sd sd-i"></div><div class="mc"><div class="mh"><div class="mn-row"><span class="mn">Mom</span><div class="mtd"><div class="mtdd" style="background:#f59e0b;"></div></div></div><span class="mt">12:08 PM</span></div><div class="mp">Can you pick up olive oil on your way home?</div></div></div>
+          <div class="mi"><div class="sd sd-g"></div><div class="mc"><div class="mh"><div class="mn-row"><span class="mn">Stripe</span></div><span class="mt">11:42 AM</span></div><div class="mp">Your payout of $2,340.00 is on the way</div></div></div>
+          <div class="mi"><div class="sd sd-i"></div><div class="mc"><div class="mh"><div class="mn-row"><span class="mn">Jake + 3 others</span></div><span class="mt">10:20 AM</span></div><div class="mp">Jake: wait who's bringing the aux cord lol</div></div></div>
+          <div class="mi"><div class="sd sd-g"></div><div class="mc"><div class="mh"><div class="mn-row"><span class="mn">Figma</span></div><span class="mt">9:30 AM</span></div><div class="mp">3 new comments on "Dashboard Redesign v2"</div></div></div>
+          <div class="mi"><div class="sd sd-i"></div><div class="mc"><div class="mh"><div class="mn-row"><span class="mn">Priya Sharma</span><div class="mtd"><div class="mtdd" style="background:#3b82f6;"></div></div></div><span class="mt">Yesterday</span></div><div class="mp">hey just saw the demo, this is really sick</div></div></div>
+        </div>
+      </div>
+
+      <!-- Digest panel -->
+      <div class="digest-panel">
+        <div class="glass-card">
+          <div class="dh">
+            <div class="dh-icon"><svg width="12" height="12" fill="white" viewBox="0 0 24 24"><path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/></svg></div>
+            <div class="dh-text"><h2>Daily Digest</h2><p>Generated today at 6:00 PM</p></div>
+            <div class="dh-regen">
+              <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+              Regenerate
+            </div>
+          </div>
+
+          <div class="dtabs">
+            <button class="dtab dtab-active">iMessage</button>
+            <button class="dtab dtab-inactive">Gmail<span class="dtab-count">4</span></button>
+          </div>
+
+          <div class="dc">
+            <!-- Summary -->
+            <div class="summary-box">
+              <div class="summary-label"><div class="summary-dot"></div><h3>Summary</h3></div>
+              <div class="summary-text">
+                <span class="summary-link">Emma</span> needs the investor deck from this morning's meeting — time sensitive, Kevin needs it by 5. <span class="summary-link">Mom</span> wants you to grab olive oil on the way home. <span class="summary-link">Priya</span> liked your demo and might want to chat more about it. The group chat with <span class="summary-link">Jake</span> is planning logistics for this weekend.
+              </div>
+            </div>
+
+            <!-- Conversations -->
+            <div style="margin-top: 20px;">
+              <div class="section-label"><div class="section-dot" style="background: #60a5fa;"></div><h3>Conversations</h3></div>
+
+              <div class="digest-item">
+                <div class="di-check"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg></div>
+                <div class="di-body">
+                  <div class="di-info"><div class="di-name">Emma Liu</div><div class="di-note">Needs investor deck ASAP — Kevin waiting before 5pm</div></div>
+                  <div class="di-arrow"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></div>
+                </div>
+              </div>
+
+              <div class="digest-item">
+                <div class="di-check"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg></div>
+                <div class="di-body">
+                  <div class="di-info"><div class="di-name">Mom</div><div class="di-note">Pick up olive oil — Dad making pasta tonight</div></div>
+                  <div class="di-arrow"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></div>
+                </div>
+              </div>
+
+              <div class="digest-item">
+                <div class="di-check"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg></div>
+                <div class="di-body">
+                  <div class="di-info"><div class="di-name">Priya Sharma</div><div class="di-note">Positive feedback on demo — may want to discuss further</div></div>
+                  <div class="di-arrow"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></div>
+                </div>
+              </div>
+
+              <div class="digest-item">
+                <div class="di-check"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg></div>
+                <div class="di-body">
+                  <div class="di-info"><div class="di-name">Jake + 3 others</div><div class="di-note">Group planning weekend meetup — logistics pending</div></div>
+                  <div class="di-arrow"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg></div>
+                </div>
+              </div>
+
+              <div class="digest-item dealt">
+                <div class="di-check"><svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg></div>
+                <div class="di-body">
+                  <div class="di-info"><div class="di-name">Olivia Torres</div><div class="di-note">Playlist request — low priority</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>myOS Mock — Pinned Dashboard</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      width: 1280px;
+      height: 800px;
+      overflow: hidden;
+      background: #000000;
+    }
+
+    .window {
+      width: 1280px; height: 800px;
+      background: rgba(15, 15, 15, 0.95);
+      display: flex; flex-direction: column;
+      border-radius: 12px; overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    /* ── Titlebar ── */
+    .titlebar {
+      height: 52px; display: flex; align-items: center; padding: 0 16px;
+      background: rgba(255,255,255,0.04);
+      border-bottom: 1px solid rgba(255,255,255,0.1); flex-shrink: 0;
+    }
+    .traffic-lights { display: flex; gap: 8px; width: 70px; }
+    .td { width: 12px; height: 12px; border-radius: 50%; }
+    .td-r { background: #ff5f57; } .td-y { background: #febc2e; } .td-g { background: #28c840; }
+    .tt { font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.8); letter-spacing: -0.01em; }
+    .tr { margin-left: auto; }
+    .gear-btn { padding: 8px; border-radius: 8px; background: none; border: none; color: rgba(255,255,255,0.5); }
+
+    .main { display: flex; flex: 1; min-height: 0; }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: 320px; flex-shrink: 0; display: flex; flex-direction: column;
+      border-right: 1px solid rgba(255,255,255,0.1);
+      background: rgba(255,255,255,0.04);
+    }
+    .filter-bar { padding: 8px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; gap: 4px; flex-wrap: wrap; align-items: center; }
+    .pill { padding: 5px 14px; border-radius: 9999px; font-size: 12px; font-weight: 500; border: none; }
+    .pa { background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.9); }
+    .pi { background: transparent; color: rgba(255,255,255,0.4); }
+    .divider { width: 1px; height: 16px; background: rgba(255,255,255,0.08); margin: 0 4px; }
+    .tag-pill { display: flex; align-items: center; gap: 4px; }
+    .tag-dot { width: 6px; height: 6px; border-radius: 50%; }
+
+    .sort-bar { padding: 6px 8px; border-bottom: 1px solid rgba(255,255,255,0.08); display: flex; gap: 4px; align-items: center; }
+    .sort-btn { padding: 4px 12px; border-radius: 9999px; font-size: 11px; font-weight: 500; border: none; display: flex; align-items: center; gap: 4px; }
+    .sort-active { background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.85); }
+    .sort-inactive { background: transparent; color: rgba(255,255,255,0.35); }
+
+    .nav-row { padding: 12px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+    .nav-row.active { background: rgba(255,255,255,0.07); }
+    .nav-icon { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: white; flex-shrink: 0; }
+    .nav-text h4 { font-size: 13px; font-weight: 500; color: rgba(255,255,255,0.9); }
+    .nav-text p { font-size: 11px; color: rgba(255,255,255,0.35); }
+
+    .msg-list { flex: 1; overflow-y: auto; }
+    .msg-item { width: 100%; padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.04); display: flex; gap: 8px; align-items: flex-start; }
+    .src-dot { width: 18px; height: 18px; border-radius: 50%; flex-shrink: 0; margin-top: 2px; }
+    .src-imsg { background: linear-gradient(135deg, #34d399, #10b981); }
+    .src-gmail { background: linear-gradient(135deg, #fb7185, #e11d48); }
+    .msg-content { flex: 1; min-width: 0; }
+    .msg-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .msg-name-row { display: flex; align-items: center; gap: 6px; min-width: 0; }
+    .msg-name { font-size: 14px; font-weight: 500; color: rgba(255,255,255,0.9); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .msg-time { font-size: 12px; color: rgba(255,255,255,0.3); flex-shrink: 0; }
+    .msg-preview { font-size: 14px; color: rgba(255,255,255,0.4); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; font-weight: 400; }
+    .msg-tags { display: flex; gap: 2px; }
+    .msg-tag-dot { width: 5px; height: 5px; border-radius: 50%; }
+
+    /* ── Dashboard panel ── */
+    .dash-panel {
+      flex: 1; min-width: 0; display: flex; flex-direction: column; overflow: hidden;
+    }
+
+    .toolbar {
+      display: flex; align-items: center; gap: 8px; padding: 10px 20px;
+    }
+    .toolbar-btn {
+      padding: 5px 12px; border-radius: 8px; font-size: 11px; font-weight: 500;
+      border: 1px solid rgba(255,255,255,0.06); background: rgba(255,255,255,0.03);
+      color: rgba(255,255,255,0.4); display: flex; align-items: center; gap: 5px;
+    }
+
+    /* ── Canvas with dot grid ── */
+    .canvas {
+      flex: 1; position: relative; overflow: hidden;
+      background-image: radial-gradient(circle, rgba(255,255,255,0.025) 1px, transparent 1px);
+      background-size: 32px 32px;
+    }
+
+    /* ── Cluster ── */
+    .cluster {
+      position: absolute;
+      border: 1.5px solid;
+      border-radius: 16px;
+    }
+    .cluster-head {
+      display: flex; align-items: center; gap: 8px;
+      padding: 10px 14px 6px;
+    }
+    .cl-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+    .cl-name { font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.55); letter-spacing: 0.04em; text-transform: uppercase; }
+    .cl-pins {
+      display: grid; justify-items: center;
+      padding: 2px 8px 14px; gap: 4px 4px;
+    }
+
+    /* ── Pin: 110x108 bounding box ── */
+    .pin {
+      position: relative; width: 110px; height: 108px; user-select: none;
+    }
+
+    /* Circle: 64x64, centered, bottom: 18px */
+    .pin-circle {
+      position: absolute; left: 50%; transform: translateX(-50%); bottom: 18px;
+      width: 64px; height: 64px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(255,255,255,0.15);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+      color: rgba(255,255,255,0.85); font-weight: 500; font-size: 15px;
+      letter-spacing: 0.03em;
+    }
+
+    /* Source dot on pin */
+    .pin-src {
+      position: absolute; bottom: -1px; right: -1px;
+      width: 11px; height: 11px; border-radius: 50%;
+      box-shadow: 0 0 4px rgba(0,0,0,0.4);
+    }
+    .pin-src-i { background: linear-gradient(135deg, #34d399, #10b981); }
+    .pin-src-g { background: linear-gradient(135deg, #fb7185, #e11d48); }
+
+    /* Name below circle */
+    .pin-label {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      font-size: 10px; color: rgba(255,255,255,0.45); text-align: center;
+      line-height: 1.2; font-weight: 400;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    /* Unread badge — exact match to .unread-badge in index.css */
+    .pin-unread {
+      position: absolute; z-index: 20; pointer-events: none;
+      top: 2px; left: 50%; transform: translateX(-50%);
+    }
+    .pin-unread-text {
+      background: rgba(30,30,30,0.92);
+      backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+      border-radius: 14px;
+      padding: 4px 10px;
+      font-size: 11px; line-height: 1.3;
+      color: rgba(255,255,255,0.95);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+      max-width: 105px; text-align: center;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.4);
+    }
+
+    /* Unclustered pins */
+    .free-pin { position: absolute; }
+
+    ::-webkit-scrollbar { width: 8px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div class="window">
+    <!-- Titlebar -->
+    <div class="titlebar">
+      <div class="traffic-lights"><div class="td td-r"></div><div class="td td-y"></div><div class="td td-g"></div></div>
+      <span class="tt">myOS</span>
+      <div class="tr"><button class="gear-btn"><svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg></button></div>
+    </div>
+
+    <div class="main">
+      <!-- Sidebar -->
+      <div class="sidebar">
+        <div class="filter-bar">
+          <button class="pill pa">All</button><button class="pill pi">iMessage</button><button class="pill pi">Gmail</button>
+          <div class="divider"></div>
+          <button class="pill pi tag-pill"><span class="tag-dot" style="background:#3b82f6;"></span>Work</button>
+          <button class="pill pi tag-pill"><span class="tag-dot" style="background:#f59e0b;"></span>Family</button>
+        </div>
+        <div class="sort-bar">
+          <button class="sort-btn sort-active"><svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>Recent</button>
+          <button class="sort-btn sort-inactive"><svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"/></svg>Priority</button>
+          <div class="divider"></div>
+          <button class="sort-btn sort-active">Unreplied</button><button class="sort-btn sort-inactive">All</button>
+        </div>
+        <div class="nav-row active">
+          <div class="nav-icon" style="background:#3b82f6;"><svg width="10" height="10" fill="currentColor" viewBox="0 0 24 24"><path d="M11.47 3.84a.75.75 0 011.06 0l8.69 8.69a.75.75 0 101.06-1.06l-8.689-8.69a2.25 2.25 0 00-3.182 0l-8.69 8.69a.75.75 0 001.061 1.06l8.69-8.69z"/><path d="M12 5.432l8.159 8.159c.03.03.06.058.091.086v6.198c0 1.035-.84 1.875-1.875 1.875H15a.75.75 0 01-.75-.75v-4.5a.75.75 0 00-.75-.75h-3a.75.75 0 00-.75.75V21a.75.75 0 01-.75.75H5.625a1.875 1.875 0 01-1.875-1.875v-6.198a2.29 2.29 0 00.091-.086L12 5.43z"/></svg></div>
+          <div class="nav-text"><h4>Dashboard</h4><p>Pinned conversations</p></div>
+        </div>
+        <div class="nav-row">
+          <div class="nav-icon" style="background:#a855f7;"><svg width="10" height="10" fill="currentColor" viewBox="0 0 24 24"><path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/></svg></div>
+          <div class="nav-text"><h4>Daily Digest</h4><p>Updated 2 hours ago</p></div>
+        </div>
+        <div class="msg-list">
+          <div class="msg-item"><div class="src-dot src-imsg"></div><div class="msg-content"><div class="msg-header"><div class="msg-name-row"><span class="msg-name">Emma Liu</span><div class="msg-tags"><div class="msg-tag-dot" style="background:#3b82f6;"></div></div></div><span class="msg-time">2:41 PM</span></div><div class="msg-preview">do you have the deck from this morning?</div></div></div>
+          <div class="msg-item"><div class="src-dot src-gmail"></div><div class="msg-content"><div class="msg-header"><div class="msg-name-row"><span class="msg-name">Nate Bergman</span><div class="msg-tags"><div class="msg-tag-dot" style="background:#3b82f6;"></div></div></div><span class="msg-time">1:15 PM</span></div><div class="msg-preview">Re: Sprint retro — updated action items</div></div></div>
+          <div class="msg-item"><div class="src-dot src-imsg"></div><div class="msg-content"><div class="msg-header"><div class="msg-name-row"><span class="msg-name">Mom</span><div class="msg-tags"><div class="msg-tag-dot" style="background:#f59e0b;"></div></div></div><span class="msg-time">12:08 PM</span></div><div class="msg-preview">Can you pick up olive oil on your way home?</div></div></div>
+          <div class="msg-item"><div class="src-dot src-gmail"></div><div class="msg-content"><div class="msg-header"><div class="msg-name-row"><span class="msg-name">Stripe</span></div><span class="msg-time">11:42 AM</span></div><div class="msg-preview">Your payout of $2,340.00 is on the way</div></div></div>
+          <div class="msg-item"><div class="src-dot src-imsg"></div><div class="msg-content"><div class="msg-header"><div class="msg-name-row"><span class="msg-name">Jake + 3 others</span></div><span class="msg-time">10:20 AM</span></div><div class="msg-preview">Jake: wait who's bringing the aux cord lol</div></div></div>
+          <div class="msg-item"><div class="src-dot src-gmail"></div><div class="msg-content"><div class="msg-header"><div class="msg-name-row"><span class="msg-name">Figma</span></div><span class="msg-time">9:30 AM</span></div><div class="msg-preview">3 new comments on "Dashboard Redesign v2"</div></div></div>
+          <div class="msg-item"><div class="src-dot src-imsg"></div><div class="msg-content"><div class="msg-header"><div class="msg-name-row"><span class="msg-name">Priya Sharma</span><div class="msg-tags"><div class="msg-tag-dot" style="background:#3b82f6;"></div></div></div><span class="msg-time">Yesterday</span></div><div class="msg-preview">hey just saw the demo, this is really sick</div></div></div>
+        </div>
+      </div>
+
+      <!-- Dashboard panel -->
+      <div class="dash-panel">
+        <div class="toolbar">
+          <button class="toolbar-btn">
+            <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+            New Cluster
+          </button>
+          <button class="toolbar-btn">
+            <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/></svg>
+            Pin Conversation
+          </button>
+        </div>
+
+        <div class="canvas">
+
+          <!-- ═══ Cluster: Work (blue) ═══ -->
+          <div class="cluster" style="left: 24px; top: 16px; background: rgba(59,130,246,0.1); border-color: rgba(59,130,246,0.25);">
+            <div class="cluster-head">
+              <span class="cl-dot" style="background:#3b82f6;"></span>
+              <span class="cl-name">Work</span>
+            </div>
+            <div class="cl-pins" style="grid-template-columns: repeat(3, 110px);">
+              <div class="pin">
+                <div class="pin-unread"><div class="pin-unread-text">have the deck?</div></div>
+                <div class="pin-circle">EL<span class="pin-src pin-src-i"></span></div>
+                <span class="pin-label">Emma Liu</span>
+              </div>
+              <div class="pin">
+                <div class="pin-unread"><div class="pin-unread-text">action items</div></div>
+                <div class="pin-circle">NB<span class="pin-src pin-src-g"></span></div>
+                <span class="pin-label">Nate Bergman</span>
+              </div>
+              <div class="pin">
+                <div class="pin-circle">PS<span class="pin-src pin-src-i"></span></div>
+                <span class="pin-label">Priya Sharma</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ═══ Cluster: Family (amber) ═══ -->
+          <div class="cluster" style="left: 400px; top: 16px; background: rgba(245,158,11,0.1); border-color: rgba(245,158,11,0.25);">
+            <div class="cluster-head">
+              <span class="cl-dot" style="background:#f59e0b;"></span>
+              <span class="cl-name">Family</span>
+            </div>
+            <div class="cl-pins" style="grid-template-columns: repeat(2, 110px);">
+              <div class="pin">
+                <div class="pin-unread"><div class="pin-unread-text">pick up olive oil</div></div>
+                <div class="pin-circle">MO<span class="pin-src pin-src-i"></span></div>
+                <span class="pin-label">Mom</span>
+              </div>
+              <div class="pin">
+                <div class="pin-circle">DA<span class="pin-src pin-src-i"></span></div>
+                <span class="pin-label">Dad</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ═══ Cluster: Friends (green) ═══ -->
+          <div class="cluster" style="left: 24px; top: 290px; background: rgba(34,197,94,0.1); border-color: rgba(34,197,94,0.25);">
+            <div class="cluster-head">
+              <span class="cl-dot" style="background:#22c55e;"></span>
+              <span class="cl-name">Friends</span>
+            </div>
+            <div class="cl-pins" style="grid-template-columns: repeat(2, 110px);">
+              <div class="pin">
+                <div class="pin-unread"><div class="pin-unread-text">bringing the aux?</div></div>
+                <div class="pin-circle">JA<span class="pin-src pin-src-i"></span></div>
+                <span class="pin-label">Jake + 3</span>
+              </div>
+              <div class="pin">
+                <div class="pin-circle">OT<span class="pin-src pin-src-i"></span></div>
+                <span class="pin-label">Olivia Torres</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ═══ Free-floating pins ═══ -->
+          <div class="free-pin" style="left: 430px; top: 300px;">
+            <div class="pin">
+              <div class="pin-unread"><div class="pin-unread-text">$2,340 payout</div></div>
+              <div class="pin-circle">ST<span class="pin-src pin-src-g"></span></div>
+              <span class="pin-label">Stripe</span>
+            </div>
+          </div>
+
+          <div class="free-pin" style="left: 560px; top: 310px;">
+            <div class="pin">
+              <div class="pin-circle">FI<span class="pin-src pin-src-g"></span></div>
+              <span class="pin-label">Figma</span>
+            </div>
+          </div>
+
+          <div class="free-pin" style="left: 690px; top: 260px;">
+            <div class="pin">
+              <div class="pin-circle">GH<span class="pin-src pin-src-g"></span></div>
+              <span class="pin-label">GitHub</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
