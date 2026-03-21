@@ -81,6 +81,9 @@ export default function App() {
   const [dashboardRefreshKey, setDashboardRefreshKey] = useState(0);
   const [selectedClusterIds, setSelectedClusterIds] = useState<string[]>([]);
 
+  // Update check state
+  const [updateInfo, setUpdateInfo] = useState<{ version: string; url: string } | null>(null);
+
   // Feature hints (post-onboarding tooltips)
   const featureHints = useFeatureHints(onboardingComplete === true);
 
@@ -229,6 +232,14 @@ export default function App() {
       }
     }
   }, [conversations, gmailThreads, instagramConversations, dismissedThreads]);
+
+  // Listen for update-available event
+  useEffect(() => {
+    const cleanup = window.electron.app.onUpdateAvailable((info) => {
+      setUpdateInfo(info);
+    });
+    return () => { cleanup(); };
+  }, []);
 
   // Load dashboard clusters for sidebar pin menu
   useEffect(() => {
@@ -801,6 +812,8 @@ export default function App() {
   const handleOnboardingComplete = async () => {
     const name = await window.electron.app.getAppName();
     setAppName(name);
+    // Clear feature hints so the tour starts fresh after onboarding
+    localStorage.removeItem('featureHintsSeen');
     setOnboardingComplete(true);
   };
 
@@ -1116,6 +1129,25 @@ export default function App() {
           stepNumber={featureHints.stepNumber}
           totalSteps={featureHints.totalSteps}
         />
+      )}
+
+
+      {updateInfo && (
+        <div className="fixed bottom-4 right-4 z-50 flex items-center gap-3 rounded-lg bg-white/10 backdrop-blur-xl border border-white/20 px-4 py-3 shadow-lg">
+          <span className="text-sm text-white/90">v{updateInfo.version} is available</span>
+          <button
+            onClick={() => window.electron.app.openDownloadUrl(updateInfo.url)}
+            className="rounded-md bg-white/20 px-3 py-1 text-sm font-medium text-white hover:bg-white/30 transition-colors"
+          >
+            Download
+          </button>
+          <button
+            onClick={() => setUpdateInfo(null)}
+            className="text-white/50 hover:text-white/80 text-sm"
+          >
+            Later
+          </button>
+        </div>
       )}
 
       <Settings

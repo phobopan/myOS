@@ -1,4 +1,4 @@
-import { memo, useState } from 'react';
+import { memo, useState, useEffect } from 'react';
 import type { Tag, DigestCategory } from '../types';
 import { DEFAULT_TIER_TAGS } from '../types';
 import { TagCreateModal } from './TagCreateModal';
@@ -75,6 +75,9 @@ export const Settings = memo(function Settings({
   onDigestAutoSettingsChange,
   appName = 'OS',
 }: SettingsProps) {
+  const [appVersion, setAppVersion] = useState('');
+  useEffect(() => { window.electron.app.getVersion().then(setAppVersion); }, []);
+
   const [showInstagramLogin, setShowInstagramLogin] = useState(false);
   const [instagramUsername, setInstagramUsername] = useState('');
   const [instagramPassword, setInstagramPassword] = useState('');
@@ -665,7 +668,7 @@ export const Settings = memo(function Settings({
               About
             </h3>
             <p className="text-sm text-white/50">
-              {appName} v0.1.0
+              {appName} v{appVersion}
             </p>
           </section>
         </div>

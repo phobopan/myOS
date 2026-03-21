@@ -109,7 +109,15 @@ contextBridge.exposeInMainWorld('electron', {
     getOnboardingComplete: () => ipcRenderer.invoke('app:getOnboardingComplete'),
     setOnboardingComplete: (complete: boolean) => ipcRenderer.invoke('app:setOnboardingComplete', complete),
     getAppName: () => ipcRenderer.invoke('app:getAppName'),
+    getVersion: () => ipcRenderer.invoke('app:getVersion'),
     restartApp: () => ipcRenderer.invoke('app:restartApp'),
+    checkForUpdates: () => ipcRenderer.invoke('app:checkForUpdates'),
+    openDownloadUrl: (url: string) => ipcRenderer.invoke('app:openDownloadUrl', url),
+    onUpdateAvailable: (callback: (info: { version: string; url: string }) => void) => {
+      const handler = (_: unknown, info: { version: string; url: string }) => callback(info);
+      ipcRenderer.on('update-available', handler);
+      return () => { ipcRenderer.removeListener('update-available', handler); };
+    },
   },
 
   // Tags API

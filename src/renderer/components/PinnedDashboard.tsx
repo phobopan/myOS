@@ -262,11 +262,7 @@ export function PinnedDashboard({
     setSearchModalOpen(true);
   };
 
-  if (!dashboard) {
-    return <div className="flex-1 flex items-center justify-center text-white/40">Loading...</div>;
-  }
-
-  const isEmpty = dashboard.clusters.length === 0 && dashboard.unclusteredPins.length === 0;
+  const isEmpty = !dashboard || (dashboard.clusters.length === 0 && dashboard.unclusteredPins.length === 0);
 
   return (
     <div className="flex-1 flex flex-col overflow-hidden">
@@ -368,7 +364,7 @@ export function PinnedDashboard({
               </svg>
               Unpin
             </button>
-            {dashboard.clusters.length > 0 && (
+            {(dashboard?.clusters?.length ?? 0) > 0 && (
               <>
                 <div className="border-t border-white/10 my-0.5" />
                 <div className="px-3 py-1 text-[10px] text-white/30 uppercase tracking-wider">Move to...</div>
@@ -378,7 +374,7 @@ export function PinnedDashboard({
                 >
                   No cluster
                 </button>
-                {dashboard.clusters.map(c => (
+                {(dashboard?.clusters || []).map(c => (
                   <button
                     key={c.id}
                     onClick={() => handleMovePin(pinContextMenu.source, pinContextMenu.id, c.id)}
@@ -401,7 +397,7 @@ export function PinnedDashboard({
         conversations={conversations}
         gmailThreads={gmailThreads}
         instagramConversations={instagramConversations}
-        clusters={dashboard.clusters}
+        clusters={dashboard?.clusters || []}
         pinnedIds={pinnedIds}
         onPin={handlePin}
         defaultClusterId={searchTargetCluster}

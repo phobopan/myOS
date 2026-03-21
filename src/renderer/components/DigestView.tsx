@@ -37,19 +37,19 @@ export const DigestView = memo(function DigestView({
   // Not configured state
   if (!claudeConfigured) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
-        <div className="w-12 h-12 rounded-full bg-purple-500/20 flex items-center justify-center mb-4">
-          <svg className="w-6 h-6 text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
-          </svg>
+      <div className="flex-1 flex flex-col items-center justify-center gap-5 text-center px-8">
+        <svg className="w-7 h-7 text-white/20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
+        </svg>
+        <div>
+          <p className="text-white/40 text-[13px] font-light">AI provider not configured</p>
+          <p className="text-white/20 text-[11px] mt-1.5 leading-relaxed font-light">
+            Set up an AI provider in Settings to<br />generate digests of your messages.
+          </p>
         </div>
-        <h3 className="text-lg font-medium text-white mb-2">Claude Code Not Detected</h3>
-        <p className="text-sm text-white/50 mb-4 max-w-sm">
-          Claude Code CLI is required for AI-powered digests. Check Settings for details.
-        </p>
         <button
           onClick={onOpenSettings}
-          className="text-sm text-blue-400 hover:text-blue-300 transition-colors px-4 py-2 rounded-lg bg-white/10"
+          className="text-[12px] text-white/50 hover:text-white/70 transition-colors px-4 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/[0.1]"
         >
           Open Settings
         </button>
@@ -80,14 +80,19 @@ export const DigestView = memo(function DigestView({
   // No digest generated yet
   if (!digest) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
-        <h3 className="text-lg font-medium text-white mb-2">Generate Your Digest</h3>
-        <p className="text-sm text-white/50 mb-4 max-w-sm">
-          Claude will triage your unreplied emails into categories with priority and action notes.
-        </p>
+      <div className="flex-1 flex flex-col items-center justify-center gap-5 text-center px-8">
+        <svg className="w-7 h-7 text-white/20" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.455 2.456L21.75 6l-1.036.259a3.375 3.375 0 00-2.455 2.456z" />
+        </svg>
+        <div>
+          <p className="text-white/40 text-[13px] font-light">Generate your daily digest</p>
+          <p className="text-white/20 text-[11px] mt-1.5 leading-relaxed font-light">
+            AI will triage your unreplied messages<br />into categories with priority and action notes.
+          </p>
+        </div>
         <button
           onClick={onRegenerate}
-          className="text-sm text-white hover:bg-purple-600 transition-colors px-4 py-2 rounded-lg bg-purple-500"
+          className="text-[12px] text-white/50 hover:text-white/70 transition-colors px-4 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/[0.1]"
         >
           Generate Digest
         </button>
@@ -100,13 +105,13 @@ export const DigestView = memo(function DigestView({
     return (
       <div className="flex-1 flex flex-col min-w-0">
         <DigestHeader generating={false} generatedAt={digest.generatedAt} onRegenerate={onRegenerate} />
-        <div className="flex-1 flex flex-col items-center justify-center text-center p-8">
-          <div className="p-3 rounded-lg bg-red-500/10 border border-red-500/20 mb-4 max-w-md">
-            <p className="text-sm text-red-400">{digest.error || 'Failed to generate digest'}</p>
+        <div className="flex-1 flex flex-col items-center justify-center gap-5 text-center px-8">
+          <div className="p-3 rounded-lg bg-white/[0.04] border border-white/[0.06] max-w-md">
+            <p className="text-[12px] text-white/40">{digest.error || 'Failed to generate digest'}</p>
           </div>
           <button
             onClick={onRegenerate}
-            className="text-sm text-white hover:bg-purple-600 transition-colors px-4 py-2 rounded-lg bg-purple-500"
+            className="text-[12px] text-white/50 hover:text-white/70 transition-colors px-4 py-1.5 rounded-lg bg-white/[0.06] hover:bg-white/[0.1]"
           >
             Retry
           </button>

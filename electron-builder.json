@@ -36,5 +36,10 @@
       }
     ]
   },
-  "npmRebuild": true
+  "npmRebuild": true,
+  "publish": {
+    "provider": "github",
+    "owner": "phobopan",
+    "repo": "myOS"
+  }
 }

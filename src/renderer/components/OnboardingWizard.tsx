@@ -13,6 +13,18 @@ export function OnboardingWizard({ onComplete, onNameChange: onNameChangeProp }:
   const [step, setStep] = useState(1);
   const [name, setName] = useState('');
 
+  // On mount, check if name was already saved (user quit mid-wizard) and resume at step 2
+  useEffect(() => {
+    window.electron.app.getUserName().then((saved) => {
+      if (saved) {
+        setName(saved);
+        const displayName = `${saved}OS`;
+        onNameChangeProp?.(displayName);
+        setStep(2);
+      }
+    });
+  }, []);
+
   // Notify parent when name changes so titlebar updates live
   const handleNameChange = (value: string) => {
     setName(value);
@@ -207,7 +219,13 @@ export function OnboardingWizard({ onComplete, onNameChange: onNameChangeProp }:
         {step < TOTAL_STEPS ? (
           <>
             <button
-              onClick={() => setStep(step + 1)}
+              onClick={() => {
+                // Save name immediately when leaving step 1 so it persists across restarts
+                if (step === 1 && name.trim()) {
+                  window.electron.app.setUserName(name.trim());
+                }
+                setStep(step + 1);
+              }}
               disabled={!canProceed()}
               className="px-6 py-2 rounded-lg bg-white/15 hover:bg-white/25 disabled:bg-white/5 disabled:text-white/20 disabled:cursor-not-allowed text-white text-sm font-medium transition-colors"
             >

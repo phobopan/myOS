@@ -5,7 +5,7 @@ import fs from 'fs';
 // Load .env from project root (works in both dev and packaged)
 config({ path: path.join(__dirname, '../../.env') });
 
-import { app, BrowserWindow, ipcMain, session, systemPreferences, Notification } from 'electron';
+import { app, BrowserWindow, ipcMain, session, systemPreferences, Notification, shell } from 'electron';
 import { registerIpcHandlers } from './ipc';
 import ElectronStore from 'electron-store';
 import type { Tag, ContactTagAssignment, ContactIdentifier, DigestCategory, DismissedThread, PinnedDashboard, Cluster, PinnedChat } from '../shared/ipcTypes';
@@ -450,6 +450,10 @@ function registerAppHandlers() {
     return getAppDisplayName();
   });
 
+  ipcMain.handle('app:getVersion', () => {
+    return app.getVersion();
+  });
+
   ipcMain.handle('app:restartApp', () => {
     app.relaunch();
     app.exit(0);
@@ -604,6 +608,44 @@ app.whenReady().then(() => {
 
   // Start digest auto-scheduler if enabled
   digestService.startAutoSchedule();
+
+  // Update check — compare local version against latest GitHub release
+  const checkForUpdate = async () => {
+    try {
+      const https = await import('https');
+      const data = await new Promise<string>((resolve, reject) => {
+        https.get('https://api.github.com/repos/phobopan/myOS/releases/latest', {
+          headers: { 'User-Agent': 'myOS' },
+        }, (res) => {
+          let body = '';
+          res.on('data', (chunk: string) => { body += chunk; });
+          res.on('end', () => resolve(body));
+        }).on('error', reject);
+      });
+      const release = JSON.parse(data);
+      const latest = release.tag_name?.replace(/^v/, '');
+      const current = app.getVersion();
+      if (latest && latest !== current) {
+        console.log(`[Update] New version available: ${latest} (current: ${current})`);
+        const dmg = release.assets?.find((a: any) => a.name.endsWith('.dmg'));
+        const downloadUrl = dmg?.browser_download_url || release.html_url;
+        for (const win of BrowserWindow.getAllWindows()) {
+          win.webContents.send('update-available', { version: latest, url: downloadUrl });
+        }
+      } else {
+        console.log(`[Update] Up to date (${current})`);
+      }
+    } catch (err) {
+      console.error('[Update] Check failed:', err);
+    }
+  };
+
+  if (process.env.NODE_ENV !== 'development') {
+    checkForUpdate();
+  }
+
+  ipcMain.handle('app:checkForUpdates', () => checkForUpdate());
+  ipcMain.handle('app:openDownloadUrl', (_, url: string) => shell.openExternal(url));
 });
 
 app.on('window-all-closed', () => {

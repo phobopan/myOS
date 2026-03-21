@@ -71,7 +71,11 @@ interface ElectronAPI {
     getOnboardingComplete: () => Promise<boolean>;
     setOnboardingComplete: (complete: boolean) => Promise<void>;
     getAppName: () => Promise<string>;
+    getVersion: () => Promise<string>;
     restartApp: () => Promise<void>;
+    checkForUpdates: () => Promise<void>;
+    openDownloadUrl: (url: string) => Promise<void>;
+    onUpdateAvailable: (callback: (info: { version: string; url: string }) => void) => () => void;
   };
 
   // Gmail APIs
