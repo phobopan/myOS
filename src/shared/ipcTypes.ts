@@ -195,6 +195,14 @@ export interface PinnedDashboard {
   canvasOffset: { x: number; y: number };
 }
 
+// ============ Update Progress Types ============
+
+export type UpdateProgress =
+  | { phase: 'downloading'; percent: number }
+  | { phase: 'installing' }
+  | { phase: 'done' }
+  | { phase: 'error'; message: string };
+
 // ============ App Config Types ============
 
 export interface AppConfig {

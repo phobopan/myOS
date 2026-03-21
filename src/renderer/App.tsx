@@ -11,7 +11,7 @@ import { PermissionOnboarding } from './components/PermissionOnboarding';
 import { OnboardingWizard } from './components/OnboardingWizard';
 import { FeatureTooltip } from './components/FeatureTooltip';
 import { useFeatureHints } from './hooks/useFeatureHints';
-import type { IMessageConversation, GmailThread, InstagramConversation, Tag, ContactTagAssignment, DigestCategory, Digest, DismissedThread, PinnedDashboard as PinnedDashboardType, PinnedChat, Cluster } from './types';
+import type { IMessageConversation, GmailThread, InstagramConversation, Tag, ContactTagAssignment, DigestCategory, Digest, DismissedThread, PinnedDashboard as PinnedDashboardType, PinnedChat, Cluster, UpdateProgress } from './types';
 
 type SourceFilter = 'all' | 'imessage' | 'gmail' | 'instagram';
 
@@ -83,6 +83,7 @@ export default function App() {
 
   // Update check state
   const [updateInfo, setUpdateInfo] = useState<{ version: string; url: string } | null>(null);
+  const [updateProgress, setUpdateProgress] = useState<UpdateProgress | null>(null);
 
   // Feature hints (post-onboarding tooltips)
   const featureHints = useFeatureHints(onboardingComplete === true);
@@ -237,6 +238,14 @@ export default function App() {
   useEffect(() => {
     const cleanup = window.electron.app.onUpdateAvailable((info) => {
       setUpdateInfo(info);
+    });
+    return () => { cleanup(); };
+  }, []);
+
+  // Listen for update progress events
+  useEffect(() => {
+    const cleanup = window.electron.app.onUpdateProgress((progress) => {
+      setUpdateProgress(progress);
     });
     return () => { cleanup(); };
   }, []);
@@ -1133,20 +1142,47 @@ export default function App() {
 
 
       {updateInfo && (
-        <div className="fixed bottom-4 right-4 z-50 flex items-center gap-3 rounded-lg bg-white/10 backdrop-blur-xl border border-white/20 px-4 py-3 shadow-lg">
-          <span className="text-sm text-white/90">v{updateInfo.version} is available</span>
-          <button
-            onClick={() => window.electron.app.openDownloadUrl(updateInfo.url)}
-            className="rounded-md bg-white/20 px-3 py-1 text-sm font-medium text-white hover:bg-white/30 transition-colors"
-          >
-            Download
-          </button>
-          <button
-            onClick={() => setUpdateInfo(null)}
-            className="text-white/50 hover:text-white/80 text-sm"
-          >
-            Later
-          </button>
+        <div className="fixed bottom-4 right-4 z-50 flex items-center gap-3 rounded-lg bg-white/10 backdrop-blur-xl border border-white/20 px-4 py-3 shadow-lg min-w-[280px]">
+          {updateProgress?.phase === 'downloading' ? (
+            <>
+              <span className="text-sm text-white/90">Downloading v{updateInfo.version}…</span>
+              <div className="flex-1 h-2 rounded-full bg-white/10 overflow-hidden min-w-[80px]">
+                <div
+                  className="h-full rounded-full bg-white/60 transition-all duration-300"
+                  style={{ width: `${updateProgress.percent}%` }}
+                />
+              </div>
+              <span className="text-xs text-white/50 tabular-nums">{updateProgress.percent}%</span>
+            </>
+          ) : updateProgress?.phase === 'installing' ? (
+            <span className="text-sm text-white/90">Installing… do not quit</span>
+          ) : updateProgress?.phase === 'error' ? (
+            <>
+              <span className="text-sm text-red-300">Update failed: {updateProgress.message}</span>
+              <button
+                onClick={() => setUpdateProgress(null)}
+                className="text-white/50 hover:text-white/80 text-sm"
+              >
+                Dismiss
+              </button>
+            </>
+          ) : (
+            <>
+              <span className="text-sm text-white/90">v{updateInfo.version} is available</span>
+              <button
+                onClick={() => window.electron.app.installUpdate(updateInfo.url)}
+                className="rounded-md bg-white/20 px-3 py-1 text-sm font-medium text-white hover:bg-white/30 transition-colors"
+              >
+                Update
+              </button>
+              <button
+                onClick={() => setUpdateInfo(null)}
+                className="text-white/50 hover:text-white/80 text-sm"
+              >
+                Later
+              </button>
+            </>
+          )}
         </div>
       )}
 

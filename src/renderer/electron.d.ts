@@ -17,6 +17,7 @@ import type {
   PinnedChat,
   Cluster,
   PinnedDashboard,
+  UpdateProgress,
 } from './types';
 
 export type PermissionStatus = 'authorized' | 'denied' | 'not-determined';
@@ -74,8 +75,9 @@ interface ElectronAPI {
     getVersion: () => Promise<string>;
     restartApp: () => Promise<void>;
     checkForUpdates: () => Promise<void>;
-    openDownloadUrl: (url: string) => Promise<void>;
+    installUpdate: (url: string) => Promise<void>;
     onUpdateAvailable: (callback: (info: { version: string; url: string }) => void) => () => void;
+    onUpdateProgress: (callback: (progress: UpdateProgress) => void) => () => void;
   };
 
   // Gmail APIs

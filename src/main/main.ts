@@ -10,7 +10,14 @@ for (const p of [
   if (config({ path: p }).parsed) break;
 }
 
-import { app, BrowserWindow, ipcMain, session, systemPreferences, Notification, shell } from 'electron';
+import { app, BrowserWindow, ipcMain, session, systemPreferences, Notification } from 'electron';
+import https from 'https';
+import http from 'http';
+import os from 'os';
+import { execFile as execFileCb } from 'child_process';
+import { promisify } from 'util';
+
+const execFile = promisify(execFileCb);
 import { registerIpcHandlers } from './ipc';
 import ElectronStore from 'electron-store';
 import type { Tag, ContactTagAssignment, ContactIdentifier, DigestCategory, DismissedThread, PinnedDashboard, Cluster, PinnedChat } from '../shared/ipcTypes';
@@ -593,6 +600,110 @@ function registerAppHandlers() {
   });
 }
 
+// ============ Self-Update Logic ============
+
+import type { UpdateProgress } from '../shared/ipcTypes';
+
+function sendUpdateProgress(progress: UpdateProgress) {
+  for (const win of BrowserWindow.getAllWindows()) {
+    win.webContents.send('update-progress', progress);
+  }
+}
+
+function downloadFile(url: string, dest: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const file = fs.createWriteStream(dest);
+    const follow = (u: string) => {
+      const mod = u.startsWith('https') ? https : http;
+      mod.get(u, { headers: { 'User-Agent': 'myOS' } }, (res) => {
+        // Follow redirects (GitHub sends 302)
+        if ((res.statusCode === 301 || res.statusCode === 302) && res.headers.location) {
+          follow(res.headers.location);
+          return;
+        }
+        if (res.statusCode !== 200) {
+          file.close();
+          fs.unlinkSync(dest);
+          reject(new Error(`Download failed: HTTP ${res.statusCode}`));
+          return;
+        }
+        const totalBytes = parseInt(res.headers['content-length'] || '0', 10);
+        let downloaded = 0;
+        res.on('data', (chunk: Buffer) => {
+          downloaded += chunk.length;
+          if (totalBytes > 0) {
+            sendUpdateProgress({ phase: 'downloading', percent: Math.round((downloaded / totalBytes) * 100) });
+          }
+        });
+        res.pipe(file);
+        file.on('finish', () => { file.close(() => resolve()); });
+      }).on('error', (err) => {
+        file.close();
+        fs.unlinkSync(dest);
+        reject(err);
+      });
+    };
+    follow(url);
+  });
+}
+
+async function installUpdate(dmgUrl: string): Promise<void> {
+  const dmgPath = path.join(os.tmpdir(), 'myOS-update.dmg');
+  let mountPoint = '';
+
+  try {
+    // 1. Download DMG
+    sendUpdateProgress({ phase: 'downloading', percent: 0 });
+    await downloadFile(dmgUrl, dmgPath);
+
+    // 2. Install
+    sendUpdateProgress({ phase: 'installing' });
+
+    // Mount DMG
+    const { stdout: plistOut } = await execFile('hdiutil', [
+      'attach', dmgPath, '-nobrowse', '-noautoopen', '-plist',
+    ]);
+
+    // Parse mount point from plist output
+    const mountMatch = plistOut.match(/<key>mount-point<\/key>\s*<string>([^<]+)<\/string>/);
+    if (!mountMatch) throw new Error('Could not find mount point in hdiutil output');
+    mountPoint = mountMatch[1];
+
+    // Find .app in mounted volume
+    const entries = fs.readdirSync(mountPoint);
+    const appName = entries.find(e => e.endsWith('.app'));
+    if (!appName) throw new Error('No .app found in DMG');
+
+    const srcApp = path.join(mountPoint, appName);
+    const destApp = path.join('/Applications', appName);
+
+    // Remove old app and copy new one
+    await execFile('rm', ['-rf', destApp]);
+    await execFile('cp', ['-R', srcApp, destApp]);
+
+    // Strip quarantine
+    await execFile('xattr', ['-r', '-d', 'com.apple.quarantine', destApp]);
+
+    sendUpdateProgress({ phase: 'done' });
+
+    // Relaunch from new location
+    app.relaunch({ execPath: path.join(destApp, 'Contents', 'MacOS', 'myOS') });
+    app.exit(0);
+
+  } catch (err: any) {
+    sendUpdateProgress({ phase: 'error', message: err.message || String(err) });
+    throw err;
+  } finally {
+    // Cleanup: unmount and remove DMG
+    try {
+      if (mountPoint) await execFile('hdiutil', ['detach', mountPoint, '-force']);
+    } catch { /* ignore */ }
+    try {
+      if (fs.existsSync(dmgPath)) fs.unlinkSync(dmgPath);
+    } catch { /* ignore */ }
+  }
+}
+
 // GPU/rendering optimizations
 app.commandLine.appendSwitch('enable-features', 'CanvasOopRasterization');
 
@@ -650,7 +761,7 @@ app.whenReady().then(() => {
   }
 
   ipcMain.handle('app:checkForUpdates', () => checkForUpdate());
-  ipcMain.handle('app:openDownloadUrl', (_, url: string) => shell.openExternal(url));
+  ipcMain.handle('app:installUpdate', (_, url: string) => installUpdate(url));
 });
 
 app.on('window-all-closed', () => {

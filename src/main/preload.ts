@@ -112,11 +112,16 @@ contextBridge.exposeInMainWorld('electron', {
     getVersion: () => ipcRenderer.invoke('app:getVersion'),
     restartApp: () => ipcRenderer.invoke('app:restartApp'),
     checkForUpdates: () => ipcRenderer.invoke('app:checkForUpdates'),
-    openDownloadUrl: (url: string) => ipcRenderer.invoke('app:openDownloadUrl', url),
+    installUpdate: (url: string) => ipcRenderer.invoke('app:installUpdate', url),
     onUpdateAvailable: (callback: (info: { version: string; url: string }) => void) => {
       const handler = (_: unknown, info: { version: string; url: string }) => callback(info);
       ipcRenderer.on('update-available', handler);
       return () => { ipcRenderer.removeListener('update-available', handler); };
+    },
+    onUpdateProgress: (callback: (progress: any) => void) => {
+      const handler = (_: unknown, progress: any) => callback(progress);
+      ipcRenderer.on('update-progress', handler);
+      return () => { ipcRenderer.removeListener('update-progress', handler); };
     },
   },
 

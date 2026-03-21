@@ -29,6 +29,8 @@ export type {
   PinnedChat,
   Cluster,
   PinnedDashboard,
+  // Update progress types
+  UpdateProgress,
 } from '../shared/ipcTypes';
 
 // Re-export DEFAULT_TIER_TAGS constant
