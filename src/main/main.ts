@@ -5,7 +5,7 @@ import fs from 'fs';
 // Load .env from project root (works in both dev and packaged)
 config({ path: path.join(__dirname, '../../.env') });
 
-import { app, BrowserWindow, ipcMain, systemPreferences, Notification } from 'electron';
+import { app, BrowserWindow, ipcMain, session, systemPreferences, Notification } from 'electron';
 import { registerIpcHandlers } from './ipc';
 import ElectronStore from 'electron-store';
 import type { Tag, ContactTagAssignment, ContactIdentifier, DigestCategory, DismissedThread, PinnedDashboard, Cluster, PinnedChat } from '../shared/ipcTypes';
@@ -587,7 +587,14 @@ function registerAppHandlers() {
 // GPU/rendering optimizations
 app.commandLine.appendSwitch('enable-features', 'CanvasOopRasterization');
 
+// Prevent macOS TCC prompts for Photos/Downloads by redirecting download path
+// and disabling Chromium features that probe protected directories
+app.commandLine.appendSwitch('disable-features', 'DesktopCapture,PictureInPicture');
+
 app.whenReady().then(() => {
+  // Redirect default download path away from ~/Downloads to avoid TCC prompt
+  const ses = session.defaultSession;
+  ses.setDownloadPath(path.join(app.getPath('userData'), 'downloads'));
   // Initialize LLM providers from stored API keys
   llmService.refreshProviders();
 
