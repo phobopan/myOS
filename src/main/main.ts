@@ -7,18 +7,14 @@ import fs from 'fs';
   const candidates = [
     path.join(__dirname, '../../../.env'),          // dev: dist/main/main -> project root
     path.join(process.resourcesPath || '', '.env'), // packaged: Contents/Resources/.env
+    // Fallback: resolve from the actual executable path
+    path.join(path.dirname(process.execPath), '..', 'Resources', '.env'),
   ];
-  // In packaged builds, __dirname is inside the asar — resolve relative to it
-  // app.asar/dist/main/ -> ../../.. -> Contents/Resources/.env
-  try {
-    const exe = process.execPath; // e.g. /Applications/myOS.app/Contents/MacOS/myOS
-    const resourcesFromExe = path.join(path.dirname(exe), '..', 'Resources', '.env');
-    candidates.push(resourcesFromExe);
-  } catch { /* ignore */ }
 
   for (const p of candidates) {
     const result = config({ path: p });
-    if (result.parsed) {
+    // Check that parsed has actual keys — asar ghost files return empty object
+    if (result.parsed && Object.keys(result.parsed).length > 0) {
       console.log('[Env] Loaded .env from', p);
       break;
     }
