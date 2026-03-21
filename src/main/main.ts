@@ -2,8 +2,13 @@ import { config } from 'dotenv';
 import path from 'path';
 import fs from 'fs';
 
-// Load .env from project root (works in both dev and packaged)
-config({ path: path.join(__dirname, '../../.env') });
+// Load .env — try multiple paths for dev and packaged builds
+for (const p of [
+  path.join(__dirname, '../../../.env'),          // dev: dist/main/main -> project root
+  path.join(process.resourcesPath || '', '.env'), // packaged: Contents/Resources/.env
+]) {
+  if (config({ path: p }).parsed) break;
+}
 
 import { app, BrowserWindow, ipcMain, session, systemPreferences, Notification, shell } from 'electron';
 import { registerIpcHandlers } from './ipc';
