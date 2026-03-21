@@ -3,11 +3,26 @@ import path from 'path';
 import fs from 'fs';
 
 // Load .env — try multiple paths for dev and packaged builds
-for (const p of [
-  path.join(__dirname, '../../../.env'),          // dev: dist/main/main -> project root
-  path.join(process.resourcesPath || '', '.env'), // packaged: Contents/Resources/.env
-]) {
-  if (config({ path: p }).parsed) break;
+{
+  const candidates = [
+    path.join(__dirname, '../../../.env'),          // dev: dist/main/main -> project root
+    path.join(process.resourcesPath || '', '.env'), // packaged: Contents/Resources/.env
+  ];
+  // In packaged builds, __dirname is inside the asar — resolve relative to it
+  // app.asar/dist/main/ -> ../../.. -> Contents/Resources/.env
+  try {
+    const exe = process.execPath; // e.g. /Applications/myOS.app/Contents/MacOS/myOS
+    const resourcesFromExe = path.join(path.dirname(exe), '..', 'Resources', '.env');
+    candidates.push(resourcesFromExe);
+  } catch { /* ignore */ }
+
+  for (const p of candidates) {
+    const result = config({ path: p });
+    if (result.parsed) {
+      console.log('[Env] Loaded .env from', p);
+      break;
+    }
+  }
 }
 
 import { app, BrowserWindow, ipcMain, session, systemPreferences, Notification } from 'electron';
