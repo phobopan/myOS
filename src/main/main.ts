@@ -63,41 +63,6 @@ function getAppDisplayName(): string {
   return name ? `${name}OS` : 'OS';
 }
 
-function updateAppBundleName(name: string): void {
-  // Only modify Info.plist in production (packaged app)
-  if (process.env.NODE_ENV === 'development') return;
-
-  try {
-    const appPath = app.getAppPath();
-    // appPath is like /Applications/myOS.app/Contents/Resources/app.asar
-    const contentsDir = path.resolve(appPath, '../../');
-    const plistPath = path.join(contentsDir, 'Info.plist');
-
-    if (!fs.existsSync(plistPath)) {
-      console.log('[App] Info.plist not found at', plistPath);
-      return;
-    }
-
-    let plist = fs.readFileSync(plistPath, 'utf-8');
-    const displayName = `${name}OS`;
-
-    // Replace CFBundleDisplayName
-    plist = plist.replace(
-      /(<key>CFBundleDisplayName<\/key>\s*<string>)[^<]*(<\/string>)/,
-      `$1${displayName}$2`
-    );
-    // Replace CFBundleName
-    plist = plist.replace(
-      /(<key>CFBundleName<\/key>\s*<string>)[^<]*(<\/string>)/,
-      `$1${displayName}$2`
-    );
-
-    fs.writeFileSync(plistPath, plist, 'utf-8');
-    console.log('[App] Updated Info.plist bundle name to', displayName);
-  } catch (err) {
-    console.error('[App] Failed to update Info.plist:', err);
-  }
-}
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -444,10 +409,6 @@ function registerAppHandlers() {
     for (const win of wins) {
       win.setTitle(displayName);
     }
-    // Update Info.plist in production
-    if (name) {
-      updateAppBundleName(name);
-    }
   });
 
   ipcMain.handle('app:getOnboardingComplete', () => {
@@ -681,8 +642,9 @@ async function installUpdate(dmgUrl: string): Promise<void> {
     await execFile('rm', ['-rf', destApp]);
     await execFile('cp', ['-R', srcApp, destApp]);
 
-    // Strip quarantine
+    // Strip quarantine and re-sign (unsigned app needs ad-hoc signature)
     await execFile('xattr', ['-r', '-d', 'com.apple.quarantine', destApp]);
+    await execFile('codesign', ['--force', '--deep', '--sign', '-', destApp]);
 
     sendUpdateProgress({ phase: 'done' });
 

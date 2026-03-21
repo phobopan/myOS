@@ -1,7 +1,7 @@
 {
   "name": "myos",
   "productName": "myOS",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "description": "Unified messaging inbox with glassmorphism UI",
   "main": "dist/main/main/main.js",
   "author": "Phoebe",
