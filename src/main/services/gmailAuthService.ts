@@ -7,6 +7,59 @@ import * as http from 'http';
 import { GmailTokens } from './gmailTypes';
 import { getGmailCredentials } from './credentialStore';
 
+// Styled HTML page for OAuth callback responses — matches app/website aesthetic
+function authPage(title: string, message: string, success: boolean): string {
+  return `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>${title}</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #050505; color: #e8e8e8;
+    font-family: -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    display: flex; align-items: center; justify-content: center;
+    min-height: 100vh;
+  }
+  .card {
+    text-align: center; padding: 48px 40px;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 12px; max-width: 360px;
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    animation: fadeUp 0.5s ease both;
+  }
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .icon {
+    width: 40px; height: 40px; border-radius: 50%;
+    background: rgba(255,255,255,${success ? '0.08' : '0.05'});
+    border: 1px solid rgba(255,255,255,0.1);
+    display: inline-flex; align-items: center; justify-content: center;
+    margin-bottom: 20px;
+  }
+  .icon svg { width: 18px; height: 18px; }
+  h1 {
+    font-size: 1rem; font-weight: 600;
+    margin-bottom: 6px; color: #e8e8e8;
+  }
+  p {
+    font-size: 0.8125rem; color: rgba(255,255,255,0.35);
+    line-height: 1.5;
+  }
+</style></head>
+<body><div class="card">
+  <div class="icon">${success
+    ? '<svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+    : '<svg viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'
+  }</div>
+  <h1>${title}</h1>
+  <p>${message}</p>
+</div></body></html>`;
+}
+
 // OAuth configuration
 const REDIRECT_PORT = 8847;
 const REDIRECT_URI = `http://127.0.0.1:${REDIRECT_PORT}/oauth/callback`;
@@ -265,8 +318,8 @@ class GmailAuthServiceClass {
 
               // Handle errors
               if (error) {
-                res.writeHead(400, { 'Content-Type': 'text/html' });
-                res.end('<h1>Authentication failed</h1><p>You can close this window.</p>');
+                res.writeHead(400, { 'Content-Type': 'text/html; charset=utf-8' });
+                res.end(authPage('Authentication failed', 'Something went wrong. You can close this window.', false));
                 server.close();
                 reject(new Error(`OAuth error: ${error}`));
                 return;
@@ -274,16 +327,16 @@ class GmailAuthServiceClass {
 
               // Verify state
               if (returnedState !== state) {
-                res.writeHead(400, { 'Content-Type': 'text/html' });
-                res.end('<h1>Authentication failed</h1><p>Invalid state parameter.</p>');
+                res.writeHead(400, { 'Content-Type': 'text/html; charset=utf-8' });
+                res.end(authPage('Authentication failed', 'Invalid state parameter. Please try again.', false));
                 server.close();
                 reject(new Error('State mismatch'));
                 return;
               }
 
               if (!code) {
-                res.writeHead(400, { 'Content-Type': 'text/html' });
-                res.end('<h1>Authentication failed</h1><p>No authorization code received.</p>');
+                res.writeHead(400, { 'Content-Type': 'text/html; charset=utf-8' });
+                res.end(authPage('Authentication failed', 'No authorization code received. Please try again.', false));
                 server.close();
                 reject(new Error('No authorization code'));
                 return;
@@ -321,30 +374,16 @@ class GmailAuthServiceClass {
               }
 
               // Send success response
-              res.writeHead(200, { 'Content-Type': 'text/html' });
-              res.end(`
-                <html>
-                  <head>
-                    <title>Authentication Successful</title>
-                    <style>
-                      body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; text-align: center; padding: 50px; }
-                      h1 { color: #10b981; }
-                    </style>
-                  </head>
-                  <body>
-                    <h1>✓ Authentication successful!</h1>
-                    <p>You can close this window and return to phoebeOS.</p>
-                  </body>
-                </html>
-              `);
+              res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+              res.end(authPage('Gmail connected', 'You can close this window and return to the app.', true));
 
               server.close();
               resolve(true);
             }
           } catch (callbackError) {
             console.error('Callback error:', callbackError);
-            res.writeHead(500, { 'Content-Type': 'text/html' });
-            res.end('<h1>Authentication error</h1><p>Please try again.</p>');
+            res.writeHead(500, { 'Content-Type': 'text/html; charset=utf-8' });
+            res.end(authPage('Authentication error', 'Something went wrong. Please try again.', false));
             server.close();
             reject(callbackError);
           }
