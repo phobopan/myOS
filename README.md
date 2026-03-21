@@ -2,7 +2,7 @@
 
 One inbox for everything. iMessage and Gmail in a single app with AI-powered daily digests.
 
-![myOS](website/screenshot.png)
+[myos.vercel.app](https://myos.vercel.app)
 
 ## Features
 
