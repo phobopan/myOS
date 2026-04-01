@@ -1,12 +1,9 @@
 # myOS
 
 One inbox for everything. iMessage and Gmail in a single app with AI-powered daily digests.
-
-[myos.vercel.app](https://myos.vercel.app)
-
 Preview: [my-os-one.vercel.app](https://my-os-one.vercel.app/)
 
-Explicit Link: https://my-os-one.vercel.app/
+
 
 ## Features
 
