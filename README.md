@@ -3,8 +3,6 @@
 One inbox for everything. iMessage and Gmail in a single app with AI-powered daily digests.
 Preview: [my-os-one.vercel.app](https://my-os-one.vercel.app/)
 
-
-
 ## Features
 
 - **Unified Inbox** — iMessage and Gmail in a single timeline
